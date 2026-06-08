@@ -1,0 +1,42 @@
+[
+  {
+    "name": "Chief Admin Officer",
+    "email": "admin@hospitality.com",
+    "password": "$2a$10$hkNYWD.rkgtdhLXgB7XzI.sciNxV9CGzL84TfVejX1V8NeQRtqreW",
+    "role": "admin",
+    "_id": "p0xp45r7s",
+    "id": "rwu5kb8bz",
+    "createdAt": "2026-06-06T05:15:54.354Z",
+    "updatedAt": "2026-06-06T05:15:54.355Z"
+  },
+  {
+    "name": "Operations Manager",
+    "email": "manager@hospitality.com",
+    "password": "$2a$10$7/Vz1LI1oLBieyR6q9Ywn.r2x4IRuXFbT04F4GdYuLKmuELt54hlW",
+    "role": "manager",
+    "_id": "n2qdo5ktq",
+    "id": "m30ahh59r",
+    "createdAt": "2026-06-06T05:15:54.355Z",
+    "updatedAt": "2026-06-06T05:15:54.355Z"
+  },
+  {
+    "name": "Resident Guest User",
+    "email": "guest@gmail.com",
+    "password": "$2a$10$iH7gCbsbDGR57Zoze1Cd2e6EjiesaQR.la1Ds.SrqIQ8njIv2YG3C",
+    "role": "guest",
+    "_id": "t336jvwqs",
+    "id": "56ho3b4g1",
+    "createdAt": "2026-06-06T05:15:54.355Z",
+    "updatedAt": "2026-06-06T05:15:54.355Z"
+  },
+  {
+    "name": "SRIVANJITHTHANGARAJ  ",
+    "email": "srivanjiththangaraj48@gmail.com",
+    "password": "$2a$10$2Gx.sAfzwGgCFGyUs3wHZOYm0kZK0mNwbVoTM4ZlpnfawgaluvKPa",
+    "role": "guest",
+    "_id": "ufmjo9o1w",
+    "id": "kgjwa3h6o",
+    "createdAt": "2026-06-06T06:20:47.265Z",
+    "updatedAt": "2026-06-06T06:20:47.265Z"
+  }
+]

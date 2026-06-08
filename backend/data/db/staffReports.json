@@ -1,0 +1,22 @@
+[
+  {
+    "guestName": "sri",
+    "roomNo": "112",
+    "staffName": "john ",
+    "service": "house keeping ",
+    "createdAt": "2026-06-06T08:22:25.011Z",
+    "_id": "mf9xmrwn2",
+    "id": "mshhlw0ho",
+    "updatedAt": "2026-06-06T08:22:25.011Z"
+  },
+  {
+    "guestName": "Resident Guest User",
+    "roomNo": "205",
+    "staffName": "John Smith",
+    "service": "Housekeeping - Poor service",
+    "createdAt": "2026-06-06T08:26:05.792Z",
+    "_id": "fb7ue7bp0",
+    "id": "6nsxwka4t",
+    "updatedAt": "2026-06-06T08:26:05.792Z"
+  }
+]

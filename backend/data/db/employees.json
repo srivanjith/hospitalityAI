@@ -1,0 +1,2551 @@
+[
+  {
+    "name": "Sarah Connor",
+    "email": "sarah.c@grandroyal.com",
+    "department": "Front Desk",
+    "shift": "Morning",
+    "salary": 3200,
+    "performance": 2,
+    "status": "active",
+    "attendance": [
+      {
+        "date": "2026-05-07",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-08",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-09",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-10",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-11",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-12",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-13",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-14",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-15",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-16",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-17",
+        "status": "absent"
+      },
+      {
+        "date": "2026-05-18",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-19",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-20",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-21",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-22",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-23",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-24",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-25",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-26",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-27",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-28",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-29",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-30",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-31",
+        "status": "leave"
+      },
+      {
+        "date": "2026-06-01",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-02",
+        "status": "leave"
+      },
+      {
+        "date": "2026-06-03",
+        "status": "absent"
+      },
+      {
+        "date": "2026-06-04",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-05",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-06",
+        "status": "absent"
+      }
+    ],
+    "_id": "xwl87fhic",
+    "id": "xwwd8st1s",
+    "createdAt": "2026-06-06T04:55:11.060Z",
+    "updatedAt": "2026-06-06T10:18:18.794Z"
+  },
+  {
+    "name": "John Doe",
+    "email": "john.doe@grandroyal.com",
+    "department": "Front Desk",
+    "shift": "Evening",
+    "salary": 3200,
+    "performance": 4.5,
+    "status": "active",
+    "attendance": [
+      {
+        "date": "2026-05-07",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-08",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-09",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-10",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-11",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-12",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-13",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-14",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-15",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-16",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-17",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-18",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-19",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-20",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-21",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-22",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-23",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-24",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-25",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-26",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-27",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-28",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-29",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-30",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-31",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-01",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-02",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-03",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-04",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-05",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-06",
+        "status": "absent"
+      }
+    ],
+    "_id": "n8b6dygcl",
+    "id": "he327bsbb",
+    "createdAt": "2026-06-06T04:55:11.060Z",
+    "updatedAt": "2026-06-06T09:59:15.210Z"
+  },
+  {
+    "name": "Alice Smith",
+    "email": "alice.s@grandroyal.com",
+    "department": "Front Desk",
+    "shift": "Night",
+    "salary": 3400,
+    "performance": 4.2,
+    "status": "active",
+    "attendance": [
+      {
+        "date": "2026-05-07",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-08",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-09",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-10",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-11",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-12",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-13",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-14",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-15",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-16",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-17",
+        "status": "leave"
+      },
+      {
+        "date": "2026-05-18",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-19",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-20",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-21",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-22",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-23",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-24",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-25",
+        "status": "absent"
+      },
+      {
+        "date": "2026-05-26",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-27",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-28",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-29",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-30",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-31",
+        "status": "absent"
+      },
+      {
+        "date": "2026-06-01",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-02",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-03",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-04",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-05",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-06",
+        "status": "present"
+      }
+    ],
+    "_id": "yncapft3e",
+    "id": "n8sploo14",
+    "createdAt": "2026-06-06T04:55:11.060Z",
+    "updatedAt": "2026-06-06T04:55:11.060Z"
+  },
+  {
+    "name": "Maria Rodriguez",
+    "email": "maria.r@grandroyal.com",
+    "department": "Housekeeping",
+    "shift": "Morning",
+    "salary": 2600,
+    "performance": 4.9,
+    "status": "active",
+    "attendance": [
+      {
+        "date": "2026-05-07",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-08",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-09",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-10",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-11",
+        "status": "leave"
+      },
+      {
+        "date": "2026-05-12",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-13",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-14",
+        "status": "absent"
+      },
+      {
+        "date": "2026-05-15",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-16",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-17",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-18",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-19",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-20",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-21",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-22",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-23",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-24",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-25",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-26",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-27",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-28",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-29",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-30",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-31",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-01",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-02",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-03",
+        "status": "absent"
+      },
+      {
+        "date": "2026-06-04",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-05",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-06",
+        "status": "present"
+      }
+    ],
+    "_id": "xunq9ybyq",
+    "id": "gf03pmcr8",
+    "createdAt": "2026-06-06T04:55:11.060Z",
+    "updatedAt": "2026-06-06T04:55:11.060Z"
+  },
+  {
+    "name": "Elena Rostova",
+    "email": "elena.r@grandroyal.com",
+    "department": "Housekeeping",
+    "shift": "Morning",
+    "salary": 2600,
+    "performance": 4.7,
+    "status": "active",
+    "attendance": [
+      {
+        "date": "2026-05-07",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-08",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-09",
+        "status": "leave"
+      },
+      {
+        "date": "2026-05-10",
+        "status": "absent"
+      },
+      {
+        "date": "2026-05-11",
+        "status": "absent"
+      },
+      {
+        "date": "2026-05-12",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-13",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-14",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-15",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-16",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-17",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-18",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-19",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-20",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-21",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-22",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-23",
+        "status": "leave"
+      },
+      {
+        "date": "2026-05-24",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-25",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-26",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-27",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-28",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-29",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-30",
+        "status": "leave"
+      },
+      {
+        "date": "2026-05-31",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-01",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-02",
+        "status": "absent"
+      },
+      {
+        "date": "2026-06-03",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-04",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-05",
+        "status": "absent"
+      },
+      {
+        "date": "2026-06-06",
+        "status": "present"
+      }
+    ],
+    "_id": "ibe9293sb",
+    "id": "g4ucc5t8i",
+    "createdAt": "2026-06-06T04:55:11.060Z",
+    "updatedAt": "2026-06-06T04:55:11.060Z"
+  },
+  {
+    "name": "David Jones",
+    "email": "david.j@grandroyal.com",
+    "department": "Housekeeping",
+    "shift": "Evening",
+    "salary": 2600,
+    "performance": 4.1,
+    "status": "active",
+    "attendance": [
+      {
+        "date": "2026-05-07",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-08",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-09",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-10",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-11",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-12",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-13",
+        "status": "absent"
+      },
+      {
+        "date": "2026-05-14",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-15",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-16",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-17",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-18",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-19",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-20",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-21",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-22",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-23",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-24",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-25",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-26",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-27",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-28",
+        "status": "absent"
+      },
+      {
+        "date": "2026-05-29",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-30",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-31",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-01",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-02",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-03",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-04",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-05",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-06",
+        "status": "absent"
+      }
+    ],
+    "_id": "0f821kluf",
+    "id": "umkmq68yq",
+    "createdAt": "2026-06-06T04:55:11.060Z",
+    "updatedAt": "2026-06-06T09:42:28.354Z"
+  },
+  {
+    "name": "Carlos Gomez",
+    "email": "carlos.g@grandroyal.com",
+    "department": "Housekeeping",
+    "shift": "Evening",
+    "salary": 2600,
+    "performance": 4.6,
+    "status": "active",
+    "attendance": [
+      {
+        "date": "2026-05-07",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-08",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-09",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-10",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-11",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-12",
+        "status": "absent"
+      },
+      {
+        "date": "2026-05-13",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-14",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-15",
+        "status": "absent"
+      },
+      {
+        "date": "2026-05-16",
+        "status": "leave"
+      },
+      {
+        "date": "2026-05-17",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-18",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-19",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-20",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-21",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-22",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-23",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-24",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-25",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-26",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-27",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-28",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-29",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-30",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-31",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-01",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-02",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-03",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-04",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-05",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-06",
+        "status": "present"
+      }
+    ],
+    "_id": "x9c89agaf",
+    "id": "v7ujxyn21",
+    "createdAt": "2026-06-06T04:55:11.060Z",
+    "updatedAt": "2026-06-06T04:55:11.060Z"
+  },
+  {
+    "name": "Sumi Chen",
+    "email": "sumi.c@grandroyal.com",
+    "department": "Housekeeping",
+    "shift": "Morning",
+    "salary": 2700,
+    "performance": 4.7,
+    "status": "active",
+    "attendance": [
+      {
+        "date": "2026-05-07",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-08",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-09",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-10",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-11",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-12",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-13",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-14",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-15",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-16",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-17",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-18",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-19",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-20",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-21",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-22",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-23",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-24",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-25",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-26",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-27",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-28",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-29",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-30",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-31",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-01",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-02",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-03",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-04",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-05",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-06",
+        "status": "present"
+      }
+    ],
+    "_id": "n0u51s91e",
+    "id": "ceo5ji04z",
+    "createdAt": "2026-06-06T04:55:11.060Z",
+    "updatedAt": "2026-06-06T04:55:11.060Z"
+  },
+  {
+    "name": "Ana Silva",
+    "email": "ana.s@grandroyal.com",
+    "department": "Housekeeping",
+    "shift": "Morning",
+    "salary": 2600,
+    "performance": 4.3,
+    "status": "active",
+    "attendance": [
+      {
+        "date": "2026-05-07",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-08",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-09",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-10",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-11",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-12",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-13",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-14",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-15",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-16",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-17",
+        "status": "absent"
+      },
+      {
+        "date": "2026-05-18",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-19",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-20",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-21",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-22",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-23",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-24",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-25",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-26",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-27",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-28",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-29",
+        "status": "leave"
+      },
+      {
+        "date": "2026-05-30",
+        "status": "leave"
+      },
+      {
+        "date": "2026-05-31",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-01",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-02",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-03",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-04",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-05",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-06",
+        "status": "present"
+      }
+    ],
+    "_id": "nnn850kyu",
+    "id": "u0m4lec4r",
+    "createdAt": "2026-06-06T04:55:11.060Z",
+    "updatedAt": "2026-06-06T04:55:11.060Z"
+  },
+  {
+    "name": "Pierre Dubois",
+    "email": "pierre.d@grandroyal.com",
+    "department": "Restaurant Services",
+    "shift": "Morning",
+    "salary": 3500,
+    "performance": 4.9,
+    "status": "active",
+    "attendance": [
+      {
+        "date": "2026-05-07",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-08",
+        "status": "absent"
+      },
+      {
+        "date": "2026-05-09",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-10",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-11",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-12",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-13",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-14",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-15",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-16",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-17",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-18",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-19",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-20",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-21",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-22",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-23",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-24",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-25",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-26",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-27",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-28",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-29",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-30",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-31",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-01",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-02",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-03",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-04",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-05",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-06",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-06",
+        "status": "absent"
+      }
+    ],
+    "_id": "f8hv5z170",
+    "id": "zxej9cuwl",
+    "createdAt": "2026-06-06T04:55:11.060Z",
+    "updatedAt": "2026-06-06T09:48:07.782Z"
+  },
+  {
+    "name": "Emily Watson",
+    "email": "emily.w@grandroyal.com",
+    "department": "Restaurant Services",
+    "shift": "Evening",
+    "salary": 2800,
+    "performance": 4.4,
+    "status": "active",
+    "attendance": [
+      {
+        "date": "2026-05-07",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-08",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-09",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-10",
+        "status": "leave"
+      },
+      {
+        "date": "2026-05-11",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-12",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-13",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-14",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-15",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-16",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-17",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-18",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-19",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-20",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-21",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-22",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-23",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-24",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-25",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-26",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-27",
+        "status": "leave"
+      },
+      {
+        "date": "2026-05-28",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-29",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-30",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-31",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-01",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-02",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-03",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-04",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-05",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-06",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-06",
+        "status": "present"
+      }
+    ],
+    "_id": "077kgbyox",
+    "id": "788ajofeb",
+    "createdAt": "2026-06-06T04:55:11.060Z",
+    "updatedAt": "2026-06-06T09:48:10.615Z"
+  },
+  {
+    "name": "Raj Patel",
+    "email": "raj.p@grandroyal.com",
+    "department": "Restaurant Services",
+    "shift": "Evening",
+    "salary": 2800,
+    "performance": 5,
+    "status": "active",
+    "attendance": [
+      {
+        "date": "2026-05-07",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-08",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-09",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-10",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-11",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-12",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-13",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-14",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-15",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-16",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-17",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-18",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-19",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-20",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-21",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-22",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-23",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-24",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-25",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-26",
+        "status": "absent"
+      },
+      {
+        "date": "2026-05-27",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-28",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-29",
+        "status": "leave"
+      },
+      {
+        "date": "2026-05-30",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-31",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-01",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-02",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-03",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-04",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-05",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-06",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-06",
+        "status": "present"
+      }
+    ],
+    "_id": "c692vu2sz",
+    "id": "up5ml699y",
+    "createdAt": "2026-06-06T04:55:11.060Z",
+    "updatedAt": "2026-06-06T09:48:13.280Z"
+  },
+  {
+    "name": "Marco Rossi",
+    "email": "marco.r@grandroyal.com",
+    "department": "Restaurant Services",
+    "shift": "Morning",
+    "salary": 3000,
+    "performance": 5,
+    "status": "active",
+    "attendance": [
+      {
+        "date": "2026-05-07",
+        "status": "leave"
+      },
+      {
+        "date": "2026-05-08",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-09",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-10",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-11",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-12",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-13",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-14",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-15",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-16",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-17",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-18",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-19",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-20",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-21",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-22",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-23",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-24",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-25",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-26",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-27",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-28",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-29",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-30",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-31",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-01",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-02",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-03",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-04",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-05",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-06",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-06",
+        "status": "present"
+      }
+    ],
+    "_id": "ju0zik6ay",
+    "id": "tvmhz2g8b",
+    "createdAt": "2026-06-06T04:55:11.060Z",
+    "updatedAt": "2026-06-06T09:48:15.862Z"
+  },
+  {
+    "name": "Marcus Vance",
+    "email": "marcus.v@grandroyal.com",
+    "department": "Security",
+    "shift": "Night",
+    "salary": 3300,
+    "performance": 5,
+    "status": "active",
+    "attendance": [
+      {
+        "date": "2026-05-07",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-08",
+        "status": "leave"
+      },
+      {
+        "date": "2026-05-09",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-10",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-11",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-12",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-13",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-14",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-15",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-16",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-17",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-18",
+        "status": "leave"
+      },
+      {
+        "date": "2026-05-19",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-20",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-21",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-22",
+        "status": "leave"
+      },
+      {
+        "date": "2026-05-23",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-24",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-25",
+        "status": "leave"
+      },
+      {
+        "date": "2026-05-26",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-27",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-28",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-29",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-30",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-31",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-01",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-02",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-03",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-04",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-05",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-06",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-06",
+        "status": "leave"
+      }
+    ],
+    "_id": "6xlfbl0hu",
+    "id": "1w4zzcn05",
+    "createdAt": "2026-06-06T04:55:11.060Z",
+    "updatedAt": "2026-06-06T09:48:28.964Z"
+  },
+  {
+    "name": "Thomas Wright",
+    "email": "thomas.w@grandroyal.com",
+    "department": "Security",
+    "shift": "Evening",
+    "salary": 3100,
+    "performance": 5,
+    "status": "active",
+    "attendance": [
+      {
+        "date": "2026-05-07",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-08",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-09",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-10",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-11",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-12",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-13",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-14",
+        "status": "leave"
+      },
+      {
+        "date": "2026-05-15",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-16",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-17",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-18",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-19",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-20",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-21",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-22",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-23",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-24",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-25",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-26",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-27",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-28",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-29",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-30",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-31",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-01",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-02",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-03",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-04",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-05",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-06",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-06",
+        "status": "leave"
+      }
+    ],
+    "_id": "m66r9crsi",
+    "id": "4uv3cbxq7",
+    "createdAt": "2026-06-06T04:55:11.060Z",
+    "updatedAt": "2026-06-06T09:48:31.641Z"
+  },
+  {
+    "name": "Leon Kennedy",
+    "email": "leon.k@grandroyal.com",
+    "department": "Security",
+    "shift": "Morning",
+    "salary": 3100,
+    "performance": 5,
+    "status": "active",
+    "attendance": [
+      {
+        "date": "2026-05-07",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-08",
+        "status": "leave"
+      },
+      {
+        "date": "2026-05-09",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-10",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-11",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-12",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-13",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-14",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-15",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-16",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-17",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-18",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-19",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-20",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-21",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-22",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-23",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-24",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-25",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-26",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-27",
+        "status": "absent"
+      },
+      {
+        "date": "2026-05-28",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-29",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-30",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-31",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-01",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-02",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-03",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-04",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-05",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-06",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-06",
+        "status": "present"
+      }
+    ],
+    "_id": "nxmgoczzf",
+    "id": "a9gx7qrxa",
+    "createdAt": "2026-06-06T04:55:11.060Z",
+    "updatedAt": "2026-06-06T09:48:34.131Z"
+  },
+  {
+    "name": "Bob Builder",
+    "email": "bob.b@grandroyal.com",
+    "department": "Maintenance",
+    "shift": "Morning",
+    "salary": 3600,
+    "performance": 5,
+    "status": "active",
+    "attendance": [
+      {
+        "date": "2026-05-07",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-08",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-09",
+        "status": "absent"
+      },
+      {
+        "date": "2026-05-10",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-11",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-12",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-13",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-14",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-15",
+        "status": "leave"
+      },
+      {
+        "date": "2026-05-16",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-17",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-18",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-19",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-20",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-21",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-22",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-23",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-24",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-25",
+        "status": "absent"
+      },
+      {
+        "date": "2026-05-26",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-27",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-28",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-29",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-30",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-31",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-01",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-02",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-03",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-04",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-05",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-06",
+        "status": "present"
+      }
+    ],
+    "_id": "o65q6yomq",
+    "id": "qorn97lgp",
+    "createdAt": "2026-06-06T04:55:11.060Z",
+    "updatedAt": "2026-06-06T09:18:18.660Z"
+  },
+  {
+    "name": "Garrus Vakarian",
+    "email": "garrus.v@grandroyal.com",
+    "department": "Maintenance",
+    "shift": "Evening",
+    "salary": 3800,
+    "performance": 5,
+    "status": "active",
+    "attendance": [
+      {
+        "date": "2026-05-07",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-08",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-09",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-10",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-11",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-12",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-13",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-14",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-15",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-16",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-17",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-18",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-19",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-20",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-21",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-22",
+        "status": "absent"
+      },
+      {
+        "date": "2026-05-23",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-24",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-25",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-26",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-27",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-28",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-29",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-30",
+        "status": "present"
+      },
+      {
+        "date": "2026-05-31",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-01",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-02",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-03",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-04",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-05",
+        "status": "present"
+      },
+      {
+        "date": "2026-06-06",
+        "status": "present"
+      }
+    ],
+    "_id": "9qkvbfh8p",
+    "id": "jigfou7fi",
+    "createdAt": "2026-06-06T04:55:11.060Z",
+    "updatedAt": "2026-06-06T09:18:16.756Z"
+  },
+  {
+    "name": "sri",
+    "email": "srivanjith@gmail.com",
+    "department": "Housekeeping",
+    "shift": "Morning",
+    "salary": 2000,
+    "attendance": [
+      {
+        "date": "2026-06-06",
+        "status": "present"
+      }
+    ],
+    "performance": 5,
+    "status": "active",
+    "_id": "9vzwj814q",
+    "id": "juuzys41u",
+    "createdAt": "2026-06-06T06:41:44.121Z",
+    "updatedAt": "2026-06-06T09:17:00.213Z"
+  }
+]
