@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { 
   LayoutDashboard, 
   CalendarDays, 
@@ -19,7 +19,7 @@ const Sidebar = ({ currentPage, setCurrentPage }) => {
     { id: 'occupancy', name: 'Bookings & Occupancy', icon: CalendarDays },
     { id: 'forecasting', name: 'AI Staffing Forecast', icon: BrainCircuit },
     { id: 'staff', name: 'Staff & Shift Registry', icon: Users },
-    { id: 'costs', name: 'Cost Optimizer', icon: BadgeIndianRupee },
+    { id: 'costs', name: 'Work Details ', icon: BadgeIndianRupee },
     { id: 'reports', name: 'Analytical Reports', icon: FileSpreadsheet },
   ];
 

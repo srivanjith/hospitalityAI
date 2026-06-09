@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   Wifi, 
   Utensils, 
@@ -22,8 +22,6 @@ import {
   Facebook,
   Twitter,
   CalendarDays,
-  Sparkles,
-  Flame,
   X,
   Search,
   Compass
@@ -94,7 +92,7 @@ const GuestPortal = () => {
   };
 
   // Load guest's recent bookings
-  const loadGuestBookings = async () => {
+  const loadGuestBookings = useCallback(async () => {
     try {
       const data = await api.getBookings();
       // Filter bookings by guest name (matches current logged in user name)
@@ -103,11 +101,14 @@ const GuestPortal = () => {
     } catch (err) {
       console.error('Error fetching guest bookings:', err);
     }
-  };
+  }, [user.name]);
 
   useEffect(() => {
-    loadGuestBookings();
-  }, [user, bookingSuccess]);
+    const timer = setTimeout(() => {
+      loadGuestBookings();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [bookingSuccess, loadGuestBookings]);
 
   const handleOpenBooking = (type) => {
     setRoomType(type);

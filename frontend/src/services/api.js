@@ -17,7 +17,7 @@ const handleResponse = async (res) => {
     try {
       const data = await res.json();
       errMsg = data.message || errMsg;
-    } catch (e) {
+    } catch {
       // ignore
     }
     throw new Error(errMsg);

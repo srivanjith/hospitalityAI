@@ -1,4 +1,5 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import api from '../services/api';
 import { useAuth } from './AuthContext';
 
@@ -9,7 +10,7 @@ export const NotificationProvider = ({ children }) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const { user } = useAuth();
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     if (!user) return;
     try {
       const data = await api.getNotifications();
@@ -19,7 +20,7 @@ export const NotificationProvider = ({ children }) => {
     } catch (err) {
       console.error('Error fetching notifications:', err);
     }
-  };
+  }, [user]);
 
   const markAllAsRead = async () => {
     if (!user) return;
@@ -34,15 +35,23 @@ export const NotificationProvider = ({ children }) => {
 
   useEffect(() => {
     if (user) {
-      fetchNotifications();
+      const timer = setTimeout(() => {
+        fetchNotifications();
+      }, 0);
       // Poll notifications every 20 seconds
       const interval = setInterval(fetchNotifications, 20000);
-      return () => clearInterval(interval);
+      return () => {
+        clearTimeout(timer);
+        clearInterval(interval);
+      };
     } else {
-      setNotifications([]);
-      setUnreadCount(0);
+      const timer = setTimeout(() => {
+        setNotifications([]);
+        setUnreadCount(0);
+      }, 0);
+      return () => clearTimeout(timer);
     }
-  }, [user]);
+  }, [user, fetchNotifications]);
 
   return (
     <NotificationContext.Provider value={{ notifications, unreadCount, fetchNotifications, markAllAsRead }}>

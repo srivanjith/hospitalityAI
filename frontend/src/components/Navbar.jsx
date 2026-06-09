@@ -1,5 +1,4 @@
-import React from 'react';
-import { Bell, Menu } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useNotifications } from '../context/NotificationContext';
 

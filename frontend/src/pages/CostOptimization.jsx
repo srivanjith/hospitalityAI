@@ -1,11 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   BadgeIndianRupee,
   Calculator,
-  TrendingDown,
   TrendingUp,
   Clock,
-  Users,
   Sparkles,
   AlertTriangle,
   CheckCircle2,
@@ -13,7 +11,8 @@ import {
   Zap,
   PiggyBank,
   ArrowDownRight,
-  ArrowUpRight
+  ArrowUpRight,
+  Calendar
 } from 'lucide-react';
 import api from '../services/api';
 import { Bar, Doughnut } from 'react-chartjs-2';
@@ -43,11 +42,17 @@ const SHIFT_HOURS = { Morning: 8, Evening: 8, Night: 8 };
 
 const DEPARTMENTS = Object.keys(DEPT_HOURLY_WAGES);
 
+const getAttendanceStatusForDate = (emp, dateStr) => {
+  const log = (emp.attendance || []).find(a => a.date === dateStr);
+  return log ? log.status : 'unlogged';
+};
+
 const CostOptimization = () => {
   const [employees, setEmployees]   = useState([]);
   const [forecasts, setForecasts]   = useState([]);
   const [loading, setLoading]       = useState(true);
   const [wages, setWages]           = useState({ ...DEPT_HOURLY_WAGES });
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [staffCounts, setStaffCounts] = useState({
     'Front Desk': 0,
     'Housekeeping': 0,
@@ -55,7 +60,7 @@ const CostOptimization = () => {
     'Security': 0,
     'Maintenance': 0
   });
-  const [overtimeThreshold, setOvertimeThreshold] = useState(8);
+  const overtimeThreshold = 8;
   const [overtimeMultiplier, setOvertimeMultiplier] = useState(1.5);
 
   useEffect(() => {
@@ -64,15 +69,19 @@ const CostOptimization = () => {
         setLoading(true);
         const [emps, fcs] = await Promise.all([
           api.getEmployees(),
-          api.getForecast(new Date().toISOString().split('T')[0], 7)
+          api.getForecast(selectedDate, 7)
         ]);
         setEmployees(emps);
         setForecasts(fcs);
 
-        // Initialize staffCounts from active employee database counts
+        // Initialize staffCounts from active employee present counts on selectedDate
         const counts = {};
         DEPARTMENTS.forEach(dept => {
-          counts[dept] = emps.filter(e => e.department === dept && e.status === 'active').length;
+          counts[dept] = emps.filter(e => 
+            e.department === dept && 
+            e.status === 'active' && 
+            getAttendanceStatusForDate(e, selectedDate) === 'present'
+          ).length;
         });
         setStaffCounts(counts);
       } catch (err) {
@@ -82,7 +91,7 @@ const CostOptimization = () => {
       }
     };
     load();
-  }, []);
+  }, [selectedDate]);
 
   // ── Derived calculations ────────────────────────────────────────────────
   const activeEmployees = employees.filter(e => e.status === 'active');
@@ -214,7 +223,7 @@ const CostOptimization = () => {
       <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
         <div className="text-center space-y-2">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-luxury-gold mx-auto"></div>
-          <p className="text-sm text-slate-500 font-mono">Computing Labor Cost Matrix...</p>
+          <p className="text-sm text-slate-500 font-mono">Computing cost and staff details....</p>
         </div>
       </div>
     );
@@ -222,6 +231,39 @@ const CostOptimization = () => {
 
   return (
     <div className="space-y-8 animate-fade-in">
+
+      {/* ── 0. Date Selector Panel ─────────────────────────────────────────── */}
+      <div className="glass-panel p-6 rounded-2xl shadow-glass flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center space-x-2">
+          <BadgeIndianRupee className="h-6 w-6 text-luxury-gold" />
+          <div>
+            <h3 className="text-sm font-bold uppercase tracking-wider dark:text-white">Cost Ledger & Labor Optimization</h3>
+            <p className="text-[10px] text-slate-400">Analyze real-time present staff headcounts and labor wage expenditures</p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Active Date Selector */}
+          <div className="flex items-center space-x-1.5 bg-white dark:bg-luxury-dark border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5">
+            <Calendar className="h-4 w-4 text-slate-400" />
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="bg-transparent border-none text-xs text-slate-700 dark:text-white focus:outline-none"
+            />
+          </div>
+
+          <button
+            onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
+            className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer text-xs flex items-center space-x-1 dark:text-white px-3"
+            title="Reset to Today"
+          >
+            <RefreshCw className="h-3.5 w-3.5 text-slate-500 mr-1" />
+            <span>Today</span>
+          </button>
+        </div>
+      </div>
 
       {/* ── 1. Summary KPI Cards ─────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

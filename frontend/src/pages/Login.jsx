@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { 
-  BrainCircuit, 
   Lock, 
   Mail, 
   Hotel, 

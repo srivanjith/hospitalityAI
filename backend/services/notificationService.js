@@ -47,20 +47,23 @@ const checkAndGenerateAlerts = async (forecast) => {
   // 2. Staffing Mismatches (Understaffing / Overstaffing)
   if (recommendedStaff && actualStaffScheduled) {
     const departments = Object.keys(recommendedStaff);
+    const existingAlerts = await db.collection('notifications').find({ type: 'staffing', date }) || [];
     
     for (const dept of departments) {
       const rec = recommendedStaff[dept];
       const act = actualStaffScheduled[dept] || 0;
       
+      const understaffedAlert = existingAlerts.find(a => a.message && a.message.toLowerCase().includes(`understaffed: ${dept.toLowerCase()}`));
+      const overstaffedAlert = existingAlerts.find(a => a.message && a.message.toLowerCase().includes(`overstaffed: ${dept.toLowerCase()}`));
+      
       if (act < rec) {
-        // Understaffed Alert
-        const existingAlert = await db.collection('notifications').findOne({
-          type: 'staffing',
-          message: new RegExp(`Understaffed: ${dept}`, 'i'),
-          date
-        });
+        // Delete overstaffed alert if it exists
+        if (overstaffedAlert) {
+          await db.collection('notifications').deleteOne({ _id: overstaffedAlert.id || overstaffedAlert._id });
+        }
         
-        if (!existingAlert) {
+        // Create understaffed warning if it does not exist
+        if (!understaffedAlert) {
           await createNotification(
             'staffing',
             'Staff Shortage Warning',
@@ -69,20 +72,27 @@ const checkAndGenerateAlerts = async (forecast) => {
           );
         }
       } else if (act > rec + 2) {
-        // Overstaffed Alert
-        const existingAlert = await db.collection('notifications').findOne({
-          type: 'staffing',
-          message: new RegExp(`Overstaffed: ${dept}`, 'i'),
-          date
-        });
+        // Delete understaffed alert if it exists
+        if (understaffedAlert) {
+          await db.collection('notifications').deleteOne({ _id: understaffedAlert.id || understaffedAlert._id });
+        }
         
-        if (!existingAlert) {
+        // Create overstaffed warning if it does not exist
+        if (!overstaffedAlert) {
           await createNotification(
             'staffing',
             'Overstaffing Cost Warning',
             `Overstaffed: ${dept} department has ${act} scheduled on ${date}, but only ${rec} are recommended.`,
             date
           );
+        }
+      } else {
+        // Balanced: delete both alerts if they exist
+        if (understaffedAlert) {
+          await db.collection('notifications').deleteOne({ _id: understaffedAlert.id || understaffedAlert._id });
+        }
+        if (overstaffedAlert) {
+          await db.collection('notifications').deleteOne({ _id: overstaffedAlert.id || overstaffedAlert._id });
         }
       }
     }

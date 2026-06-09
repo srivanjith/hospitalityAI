@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import { X, Flame, AlertCircle, HelpCircle, Check, Settings } from 'lucide-react';
 import { useNotifications } from '../context/NotificationContext';
 

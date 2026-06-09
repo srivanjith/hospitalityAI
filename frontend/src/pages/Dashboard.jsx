@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
-  Hotel, 
   DoorOpen, 
   Percent, 
   BadgeIndianRupee, 
@@ -105,7 +104,7 @@ const Dashboard = ({ setCurrentPage }) => {
         try {
           const reports = await api.getStaffReports();
           setStaffReports(reports || []);
-        } catch (_) {
+        } catch {
           // Non-critical: reports panel will show empty state
         }
       } catch (err) {

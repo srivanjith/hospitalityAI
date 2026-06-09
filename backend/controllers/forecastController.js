@@ -29,6 +29,26 @@ const getScheduledStaffForDate = async (dateStr) => {
   return counts;
 };
 
+// Helper to count total active staff by department
+const getActiveStaffCounts = async () => {
+  const employees = await db.collection('employees').find({ status: 'active' });
+  const counts = {
+    'Front Desk': 0,
+    'Housekeeping': 0,
+    'Restaurant Services': 0,
+    'Security': 0,
+    'Maintenance': 0
+  };
+
+  employees.forEach(emp => {
+    if (counts[emp.department] !== undefined) {
+      counts[emp.department]++;
+    }
+  });
+
+  return counts;
+};
+
 // @desc    Get occupancy forecasting and staffing recommendations for a range
 // @route   GET /api/forecasts
 // @access  Private
@@ -47,6 +67,7 @@ const getForecast = async (req, res) => {
     // 2. Decorate forecasts with actual scheduled numbers from active employee database
     const decoratedForecasts = [];
     const todayStr = new Date().toISOString().split('T')[0];
+    const activeStaffCounts = await getActiveStaffCounts();
 
     for (const f of rawForecasts) {
       if (f.date === todayStr) {
@@ -73,17 +94,35 @@ const getForecast = async (req, res) => {
       let savedRec = await db.collection('recommendations').findOne({ date: f.date });
       
       let finalForecast;
+      let adjustedStaffScheduled;
+
       if (savedRec) {
+        adjustedStaffScheduled = { ...savedRec.actualStaffScheduled };
+        
+        if (savedRec.optimized) {
+          // If optimized, subtract any absences on that date from the optimized count
+          for (const dept of Object.keys(adjustedStaffScheduled)) {
+            const totalActive = activeStaffCounts[dept] || 0;
+            const totalPresent = actualStaff[dept] || 0;
+            const absentCount = Math.max(0, totalActive - totalPresent);
+            adjustedStaffScheduled[dept] = Math.max(0, adjustedStaffScheduled[dept] - absentCount);
+          }
+        } else {
+          // If not optimized, actual staff is just the present/available staff
+          adjustedStaffScheduled = actualStaff;
+        }
+
         finalForecast = {
           ...f,
-          actualStaffScheduled: savedRec.optimized ? savedRec.actualStaffScheduled : actualStaff,
+          actualStaffScheduled: adjustedStaffScheduled,
           optimized: savedRec.optimized,
           insights: savedRec.insights.length ? savedRec.insights : f.insights
         };
       } else {
+        adjustedStaffScheduled = actualStaff;
         finalForecast = {
           ...f,
-          actualStaffScheduled: actualStaff,
+          actualStaffScheduled: adjustedStaffScheduled,
           optimized: false
         };
       }
@@ -98,7 +137,8 @@ const getForecast = async (req, res) => {
             predictedOccupancy: finalForecast.predictedOccupancy,
             predictedGuests: finalForecast.predictedGuests,
             recommendedStaff: finalForecast.recommendedStaff,
-            actualStaffScheduled: finalForecast.actualStaffScheduled,
+            // Keep the original, unadjusted target counts in the database if optimized
+            actualStaffScheduled: savedRec.optimized ? savedRec.actualStaffScheduled : finalForecast.actualStaffScheduled,
             insights: finalForecast.insights
           }
         });

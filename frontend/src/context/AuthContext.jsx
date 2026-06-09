@@ -1,4 +1,5 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useState, useEffect, useContext } from 'react';
 import api from '../services/api';
 
 const AuthContext = createContext(null);
@@ -63,21 +64,17 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateProfile = async (profileData) => {
-    try {
-      const updatedUser = await api.updateProfile(profileData);
-      if (updatedUser.token) {
-        localStorage.setItem('token', updatedUser.token);
-      }
-      setUser({
-        id: updatedUser.id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-        role: updatedUser.role
-      });
-      return updatedUser;
-    } catch (err) {
-      throw err;
+    const updatedUser = await api.updateProfile(profileData);
+    if (updatedUser.token) {
+      localStorage.setItem('token', updatedUser.token);
     }
+    setUser({
+      id: updatedUser.id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      role: updatedUser.role
+    });
+    return updatedUser;
   };
 
   return (

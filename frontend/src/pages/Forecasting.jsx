@@ -1,16 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   Sparkles, 
   ChevronDown, 
   ChevronUp, 
   AlertTriangle, 
   CheckCircle, 
-  Undo,
   Brain,
   Calendar,
   RefreshCw,
   Cpu,
-  SlidersHorizontal,
   Flame,
   CloudRain,
   Sun,
@@ -65,7 +63,7 @@ const Forecasting = () => {
     { id: 'holiday', label: 'Holidays', icon: Flame,    factor: 1.25 },
   ];
 
-  const [selectedModel, setSelectedModel] = useState('lstm');
+  const selectedModel = 'lstm';
   const [selectedSeason, setSelectedSeason] = useState('summer');
   const [festivalActive, setFestivalActive] = useState(false);
   const [cancellationRate, setCancellationRate] = useState(10);
@@ -82,24 +80,27 @@ const Forecasting = () => {
     predictedOccupancy: Math.min(100, Math.round(f.predictedOccupancy * effectiveMultiplier * 10) / 10)
   }));
 
-  const loadForecast = async () => {
+  const loadForecast = useCallback(async () => {
     try {
       setLoading(true);
       const data = await api.getForecast(startDate, forecastDays);
       setForecasts(data);
-      if (data.length > 0 && !expandedDate) {
-        setExpandedDate(data[0].date); // Expand first date by default
+      if (data.length > 0) {
+        setExpandedDate(prev => prev || data[0].date); // Expand first date by default
       }
     } catch (err) {
       console.error('Error loading forecasts:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [startDate, forecastDays]);
 
   useEffect(() => {
-    loadForecast();
-  }, [startDate, forecastDays]);
+    const timer = setTimeout(() => {
+      loadForecast();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [loadForecast]);
 
   const handleOptimize = async (dateStr) => {
     try {

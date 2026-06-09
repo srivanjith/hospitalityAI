@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
-  Plus, 
   Search, 
   Trash2, 
   Star, 
@@ -35,9 +34,11 @@ const StaffManagement = () => {
   // Attendance date log
   const [attendanceDate, setAttendanceDate] = useState(() => new Date().toISOString().split('T')[0]);
 
-  const loadEmployees = async () => {
+  const loadEmployees = async (showLoading = false) => {
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      }
       const data = await api.getEmployees();
       setEmployees(data);
     } catch (err) {
@@ -48,7 +49,10 @@ const StaffManagement = () => {
   };
 
   useEffect(() => {
-    loadEmployees();
+    const timer = setTimeout(() => {
+      loadEmployees(false);
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleAddEmployee = async (e) => {

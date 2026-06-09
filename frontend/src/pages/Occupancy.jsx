@@ -1,13 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Plus, 
   CalendarDays, 
-  UserPlus, 
-  Sparkles,
-  TrendingUp,
   X,
-  CheckCircle2,
-  Trash2,
   AlertOctagon
 } from 'lucide-react';
 import api from '../services/api';
@@ -45,9 +40,11 @@ const Occupancy = () => {
   const [guestsCount, setGuestsCount] = useState(1);
   const [formError, setFormError] = useState(null);
 
-  const loadOccupancyData = async () => {
+  const loadOccupancyData = async (showLoading = false) => {
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      }
       const bookingsData = await api.getBookings();
       setBookings(bookingsData);
       
@@ -61,7 +58,10 @@ const Occupancy = () => {
   };
 
   useEffect(() => {
-    loadOccupancyData();
+    const timer = setTimeout(() => {
+      loadOccupancyData(false);
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleAddBooking = async (e) => {
