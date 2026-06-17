@@ -87,3 +87,46 @@
 .dark .table-luxury-row {
   @apply border-b border-slate-800/50 hover:bg-slate-800/30;
 }
+
+/* Drifting/floating ambient glow shapes */
+@keyframes float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-20px) scale(1.05); }
+}
+@keyframes float-reverse {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(20px) scale(0.95); }
+}
+.animate-float {
+  animation: float 10s ease-in-out infinite;
+}
+.animate-float-reverse {
+  animation: float-reverse 12s ease-in-out infinite;
+}
+
+/* Entry slide downs and ups */
+@keyframes slideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.animate-slide-down {
+  animation: slideDown 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.animate-slide-up {
+  animation: slideUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Staggered delay utility classes */
+.animation-delay-100 { animation-delay: 100ms; animation-fill-mode: both; }
+.animation-delay-200 { animation-delay: 200ms; animation-fill-mode: both; }
+.animation-delay-300 { animation-delay: 300ms; animation-fill-mode: both; }
+.animation-delay-400 { animation-delay: 400ms; animation-fill-mode: both; }
+.animation-delay-500 { animation-delay: 500ms; animation-fill-mode: both; }
+.animation-delay-700 { animation-delay: 700ms; animation-fill-mode: both; }
+.animation-delay-900 { animation-delay: 900ms; animation-fill-mode: both; }
+

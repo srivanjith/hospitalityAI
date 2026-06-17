@@ -49,8 +49,7 @@ const seed = async () => {
       console.log('✅ Users seeded!');
     }
 
-    // 2. Seed Hotels
-    const hotelCount = await db.collection('hotels').countDocuments();
+     const hotelCount = await db.collection('hotels').countDocuments();
     let hotelId = '';
     if (hotelCount === 0) {
       console.log('🌱 Seeding resort metadata...');

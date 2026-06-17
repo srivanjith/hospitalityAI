@@ -20,6 +20,7 @@ const bookingRoutes = express.Router();
 const staffRoutes = express.Router();
 const forecastRoutes = express.Router();
 const reportRoutes = express.Router();
+const aiRoutes = express.Router();
 
 // Auth Controller imports
 const {
@@ -34,7 +35,8 @@ const {
   getBookings,
   addBooking,
   updateBookingStatus,
-  getOccupancyAnalytics
+  getOccupancyAnalytics,
+  getOccupancySuggestion
 } = require('./controllers/bookingController');
 
 // Staff Controller imports
@@ -62,6 +64,13 @@ const {
   exportReport
 } = require('./controllers/reportController');
 
+// AI Controller imports
+const {
+  aiChat,
+  seedData
+} = require('./controllers/aiController');
+
+
 // Auth Middlewares
 const { protect } = require('./middleware/authMiddleware');
 
@@ -76,6 +85,7 @@ bookingRoutes.get('/', protect, getBookings);
 bookingRoutes.post('/', protect, addBooking);
 bookingRoutes.put('/:id/status', protect, updateBookingStatus);
 bookingRoutes.get('/analytics', protect, getOccupancyAnalytics);
+bookingRoutes.get('/suggestion', protect, getOccupancySuggestion);
 
 // Hook up Staff Routes
 staffRoutes.get('/', protect, getEmployees);
@@ -97,6 +107,10 @@ forecastRoutes.put('/notifications/read', protect, markNotificationsRead);
 // Hook up Reports Routes
 reportRoutes.get('/export', protect, exportReport);
 
+// Hook up AI Routes
+aiRoutes.post('/chat', protect, aiChat);
+aiRoutes.post('/seed', protect, seedData);
+
 // Register API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
@@ -104,6 +118,7 @@ app.use('/api/occupancy', bookingRoutes); // maps /api/occupancy/analytics corre
 app.use('/api/staff', staffRoutes);
 app.use('/api/forecasts', forecastRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Base route
 app.get('/', (req, res) => {
@@ -111,7 +126,7 @@ app.get('/', (req, res) => {
 });
 
 // Start Server & DB connection
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5005;
 
 const startServer = async () => {
   try {
@@ -122,12 +137,26 @@ const startServer = async () => {
     await seed();
 
     // 3. Listen to port
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`🚀 HospitalityAI Backend Server running on port ${PORT}`);
+    });
+
+    // Graceful EADDRINUSE handler — exits cleanly so nodemon can retry
+    server.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.error(`⚠️  Port ${PORT} is in use. Kill the old process and nodemon will restart.`);
+        process.exit(1);
+      } else {
+        throw err;
+      }
     });
   } catch (error) {
     console.error('Server boot failed:', error);
+    process.exit(1);
   }
 };
 
 startServer();
+
+
+

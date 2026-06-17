@@ -8,13 +8,19 @@ import {
   CheckCircle2, 
   ChevronRight,
   TrendingUp,
+  TrendingDown,
+  Minus,
   BrainCircuit,
   Flag,
   MessageSquareWarning,
   User,
   BedDouble,
   Wrench,
-  Clock4
+  Clock4,
+  Lightbulb,
+  BarChart2,
+  Target,
+  Calendar
 } from 'lucide-react';
 import api from '../services/api';
 import { Line } from 'react-chartjs-2';
@@ -53,6 +59,9 @@ const Dashboard = ({ setCurrentPage }) => {
   const [forecast7Days, setForecast7Days] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [staffReports, setStaffReports] = useState([]);
+  const [occupancySuggestion, setOccupancySuggestion] = useState(null);
+  const [suggestionLoading, setSuggestionLoading] = useState(true);
+  const [suggestionError, setSuggestionError] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -105,8 +114,21 @@ const Dashboard = ({ setCurrentPage }) => {
           const reports = await api.getStaffReports();
           setStaffReports(reports || []);
         } catch {
-          // Non-critical: reports panel will show empty state
+          // Non-critical
         }
+
+        // 6. Fetch occupancy suggestion (independent — has its own loading state)
+        setSuggestionLoading(true);
+        setSuggestionError('');
+        api.getOccupancySuggestion()
+          .then(data => {
+            setOccupancySuggestion(data);
+            setSuggestionLoading(false);
+          })
+          .catch(err => {
+            setSuggestionError(err.message || 'Could not load suggestion data');
+            setSuggestionLoading(false);
+          });
       } catch (err) {
         console.error('Error loading dashboard data:', err);
       } finally {
@@ -333,7 +355,229 @@ const Dashboard = ({ setCurrentPage }) => {
         </div>
       </div>
 
-      {/* 3. Actionable AI Recommendations & Urgent Warnings Log */}
+      {/* 3. Occupancy Suggestion Card */}
+      <div className="glass-panel p-6 rounded-2xl shadow-glass border border-indigo-500/10">
+        {/* Card Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-600/15 border border-indigo-500/20">
+              <Lightbulb className="h-5 w-5 text-indigo-400" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold font-serif dark:text-white flex items-center gap-2">
+                Occupancy Suggestion
+                <span className="text-[10px] font-mono font-normal bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  {(() => {
+                    const m = new Date().getMonth();
+                    if (m >= 2 && m <= 4) return 'Spring Season';
+                    if (m >= 5 && m <= 7) return 'Summer Season';
+                    if (m >= 8 && m <= 10) return 'Festival Season';
+                    return 'Peak Winter Season';
+                  })()}
+                </span>
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Current prediction validated against same-period last year actuals
+              </p>
+            </div>
+          </div>
+          {occupancySuggestion?.modelAccuracy != null && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+              <Target className="h-3.5 w-3.5 text-emerald-500" />
+              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                {occupancySuggestion.modelAccuracy}% Model Accuracy
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Loading state */}
+        {suggestionLoading ? (
+          <div className="flex items-center justify-center gap-3 py-10 text-slate-400">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-400" />
+            <span className="text-sm">Analysing last year's occupancy data…</span>
+          </div>
+
+        /* Error state */
+        ) : suggestionError ? (
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-rose-500/5 border border-rose-500/20 text-rose-500">
+            <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold">Could not load suggestion data</p>
+              <p className="text-xs text-rose-400 mt-0.5">{suggestionError}</p>
+            </div>
+          </div>
+
+        /* No data state */
+        ) : !occupancySuggestion ? (
+          <div className="text-center py-10 text-slate-400">
+            <BarChart2 className="h-10 w-10 mx-auto mb-3 opacity-20" />
+            <p className="text-sm font-medium">No historical data available</p>
+            <p className="text-xs mt-1">Run the AI Data Seeder (admin) to populate last year&apos;s data.</p>
+          </div>
+
+        /* Data loaded — full display */
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+            {/* Today: Prediction vs Last Year */}
+            <div className="md:col-span-1 space-y-3">
+              
+              {/* Current Prediction */}
+              <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-500/5 to-purple-500/5 border border-indigo-500/15">
+                <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-2 flex items-center gap-1">
+                  <BrainCircuit className="h-3 w-3 text-indigo-400" /> Today's AI Prediction
+                </p>
+                <p className="text-3xl font-bold font-serif text-indigo-600 dark:text-indigo-300">
+                  {occupancySuggestion.todayPrediction}%
+                </p>
+                <p className="text-xs text-slate-400 mt-1">Forecasted occupancy for today</p>
+              </div>
+
+              {/* Last Year Same Day */}
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+                <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-2 flex items-center gap-1">
+                  <Calendar className="h-3 w-3" /> Last Year ({occupancySuggestion.lastYearSameDayDate})
+                </p>
+                {occupancySuggestion.lastYearSameDay != null ? (
+                  <>
+                    <p className="text-3xl font-bold font-serif text-slate-700 dark:text-slate-200">
+                      {occupancySuggestion.lastYearSameDay}%
+                    </p>
+                    <div className={`text-xs font-semibold mt-1 flex items-center gap-1 ${
+                      occupancySuggestion.trend === 'up' ? 'text-emerald-500'
+                      : occupancySuggestion.trend === 'down' ? 'text-rose-500'
+                      : 'text-slate-400'
+                    }`}>
+                      {occupancySuggestion.trend === 'up' && <TrendingUp className="h-3.5 w-3.5" />}
+                      {occupancySuggestion.trend === 'down' && <TrendingDown className="h-3.5 w-3.5" />}
+                      {occupancySuggestion.trend === 'stable' && <Minus className="h-3.5 w-3.5" />}
+                      {occupancySuggestion.trend === 'up'
+                        ? `+${occupancySuggestion.trendDiff}% above last year`
+                        : occupancySuggestion.trend === 'down'
+                        ? `${occupancySuggestion.trendDiff}% below last year`
+                        : 'Same as last year'}
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-sm text-slate-400">No data for this date last year</p>
+                )}
+              </div>
+
+              {/* Model Stats */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/15 text-center">
+                  <p className="text-lg font-bold text-amber-600 dark:text-amber-300">
+                    {occupancySuggestion.avgError != null ? `±${occupancySuggestion.avgError}%` : '—'}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Avg Error</p>
+                </div>
+                <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/15 text-center">
+                  <p className="text-lg font-bold text-emerald-600 dark:text-emerald-300">
+                    {occupancySuggestion.totalHistoryDays}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">History Days</p>
+                </div>
+              </div>
+
+              {/* Peak Month */}
+              {occupancySuggestion.peakMonth && (
+                <div className="p-3 rounded-xl bg-luxury-gold/5 border border-luxury-gold/20 flex items-center gap-3">
+                  <div className="text-2xl">🏆</div>
+                  <div>
+                    <p className="text-xs font-bold text-luxury-gold">Peak Month</p>
+                    <p className="text-sm font-semibold dark:text-white">
+                      {occupancySuggestion.peakMonth.name} — avg {occupancySuggestion.peakMonth.avg}%
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 7-Day Dual-Line Forecast Chart */}
+            <div className="md:col-span-2 flex flex-col">
+              <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-1">
+                <BarChart2 className="h-3.5 w-3.5" /> Next 7 Days — This Year Prediction vs Last Year Actual
+              </p>
+              <div className="flex-1 overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-100 dark:border-slate-800">
+                      <th className="text-left py-2 px-3 text-slate-400 font-semibold">Date</th>
+                      <th className="text-center py-2 px-3 text-indigo-400 font-semibold">Predicted</th>
+                      <th className="text-center py-2 px-3 text-amber-400 font-semibold">Last Year Actual</th>
+                      <th className="text-center py-2 px-3 text-slate-400 font-semibold">Difference</th>
+                      <th className="text-left py-2 px-3 text-slate-400 font-semibold">Confidence</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
+                    {(occupancySuggestion.next7Forecast || []).map((f, idx) => {
+                      const lyActual = occupancySuggestion.next7LastYear?.[idx]?.actual;
+                      const diff = lyActual != null ? Math.round((f.predicted - lyActual) * 10) / 10 : null;
+                      const accuracy = occupancySuggestion.modelAccuracy || 80;
+                      const confidence = accuracy >= 85 ? 'High' : accuracy >= 70 ? 'Moderate' : 'Low';
+                      const confColor = accuracy >= 85 ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'
+                        : accuracy >= 70 ? 'text-amber-500 bg-amber-500/10 border-amber-500/20'
+                        : 'text-rose-500 bg-rose-500/10 border-rose-500/20';
+                      return (
+                        <tr key={f.date} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                          <td className="py-2.5 px-3 font-semibold dark:text-slate-200">{f.label}</td>
+                          <td className="py-2.5 px-3 text-center">
+                            <span className="font-bold text-indigo-600 dark:text-indigo-300">{f.predicted}%</span>
+                          </td>
+                          <td className="py-2.5 px-3 text-center">
+                            {lyActual != null
+                              ? <span className="font-semibold text-amber-600 dark:text-amber-300">{lyActual}%</span>
+                              : <span className="text-slate-300">—</span>}
+                          </td>
+                          <td className="py-2.5 px-3 text-center">
+                            {diff != null ? (
+                              <span className={`font-semibold ${
+                                diff > 0 ? 'text-emerald-500' : diff < 0 ? 'text-rose-500' : 'text-slate-400'
+                              }`}>
+                                {diff > 0 ? '+' : ''}{diff}%
+                              </span>
+                            ) : <span className="text-slate-300">—</span>}
+                          </td>
+                          <td className="py-2.5 px-3">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${confColor}`}>
+                              {confidence}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Accuracy bar */}
+              {occupancySuggestion.modelAccuracy != null && (
+                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-xs text-slate-500">Model Accuracy (based on last year validation)</p>
+                    <p className="text-xs font-bold dark:text-white">{occupancySuggestion.modelAccuracy}%</p>
+                  </div>
+                  <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+                    <div
+                      className={`h-2 rounded-full transition-all duration-700 ${
+                        occupancySuggestion.modelAccuracy >= 85 ? 'bg-emerald-500'
+                        : occupancySuggestion.modelAccuracy >= 70 ? 'bg-amber-500'
+                        : 'bg-rose-500'
+                      }`}
+                      style={{ width: `${occupancySuggestion.modelAccuracy}%` }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1.5">
+                    ℹ️ Accuracy computed by comparing ML predictions against {occupancySuggestion.lastYearWindowData?.length || 0} same-period actual data points from last year.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="glass-panel p-6 rounded-2xl shadow-glass">
         <h3 className="text-lg font-bold font-serif dark:text-white mb-4">Operations Warning Board</h3>
         {alerts.length === 0 ? (

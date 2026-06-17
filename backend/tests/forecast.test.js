@@ -1,7 +1,5 @@
 const { fitForecastingModel, predictForDate, calculateStaffForOccupancy } = require('../services/mlService');
 
-// 1. Setup a mini mock historical dataset of 14 days representing cyclical variations
-// Total rooms: 100
 const mockHistory = [
   { date: '2026-05-01', occupancyPercentage: 40, guestCount: 68, roomsOccupied: 40 }, // Friday
   { date: '2026-05-02', occupancyPercentage: 55, guestCount: 93, roomsOccupied: 55 }, // Saturday
@@ -23,7 +21,6 @@ const mockHistory = [
 const runTests = () => {
   console.log('🧪 Starting ML Forecasting Algorithm Verification Tests...\n');
 
-  // Test 1: Model Fitting
   console.log('Test 1: Model fitting (linear regression + weekly seasonality)...');
   const model = fitForecastingModel(mockHistory);
   console.log(`- Regression slope: ${model.slope.toFixed(4)}`);
@@ -36,15 +33,12 @@ const runTests = () => {
   }
   console.log('✅ Test 1 Passed!\n');
 
-  // Test 2: Forecast Prediction for specific dates
   console.log('Test 2: Predict occupancy for a weekend (Saturday) and weekday (Monday)...');
   
-  // Saturday
-  const satPrediction = predictForDate('2026-05-16', model); // 2 days after last record
+  const satPrediction = predictForDate('2026-05-16', model); 
   console.log(`- Saturday forecast occupancy: ${satPrediction.predictedOccupancy}% (Guests: ${satPrediction.predictedGuests})`);
   
-  // Monday
-  const monPrediction = predictForDate('2026-05-18', model); // 4 days after last record
+  const monPrediction = predictForDate('2026-05-18', model); 
   console.log(`- Monday forecast occupancy: ${monPrediction.predictedOccupancy}% (Guests: ${monPrediction.predictedGuests})`);
   
   if (satPrediction.predictedOccupancy <= monPrediction.predictedOccupancy) {

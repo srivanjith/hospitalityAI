@@ -75,7 +75,7 @@ const getBookings = async (req, res) => {
 // @route   POST /api/bookings
 // @access  Private
 const addBooking = async (req, res) => {
-  const { guestName, roomType, checkIn, checkOut, guestsCount } = req.body;
+  const { guestName, roomType, checkIn, checkOut, checkInTime, checkOutTime, guestsCount } = req.body;
 
   try {
     if (!guestName || !roomType || !checkIn || !checkOut || !guestsCount) {
@@ -110,6 +110,8 @@ const addBooking = async (req, res) => {
       roomType,
       checkIn,
       checkOut,
+      checkInTime: checkInTime || '14:00',
+      checkOutTime: checkOutTime || '12:00',
       guestsCount: Number(guestsCount),
       status: 'booked',
       revenue
@@ -210,9 +212,132 @@ const getOccupancyAnalytics = async (req, res) => {
   }
 };
 
+
+const getOccupancySuggestion = async (req, res) => {
+  try {
+    const mlService = require('../services/mlService');
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+
+    // ── A. Gather last 14 days of history around this day last year ──
+    const lastYear = new Date(today);
+    lastYear.setFullYear(lastYear.getFullYear() - 1);
+
+    const lastYearStart = new Date(lastYear);
+    lastYearStart.setDate(lastYearStart.getDate() - 3);
+    const lastYearEnd = new Date(lastYear);
+    lastYearEnd.setDate(lastYearEnd.getDate() + 10);
+
+    const lYStartStr = lastYearStart.toISOString().split('T')[0];
+    const lYEndStr   = lastYearEnd.toISOString().split('T')[0];
+
+    const allHistory = await db.collection('occupancyHistory').find();
+
+    // Last year same period actuals
+    const lastYearActuals = allHistory
+      .filter(h => h.date >= lYStartStr && h.date <= lYEndStr)
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    // ── B. ML model forecast for next 7 days ──
+    const hotels = await db.collection('hotels').find();
+    const totalRooms = hotels[0]?.totalRooms || 120;
+
+    const rawForecasts = await mlService.getForecastRange(todayStr, 7, totalRooms);
+
+    // ── C. Compute accuracy based on same-period last year vs ML prediction ──
+    // For days where we have last year data, compare the ML prediction (retrained on same data position)
+    // to what actually happened — then compute % accuracy
+    const accuracyPoints = [];
+
+    // Fit model on data UP TO (but not including) last year's window
+    const trainingData = allHistory
+      .filter(h => h.date < lYStartStr)
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    if (trainingData.length >= 14 && lastYearActuals.length > 0) {
+      const model = mlService.fitForecastingModel(trainingData);
+      lastYearActuals.forEach(actual => {
+        const predicted = mlService.predictForDate(actual.date, model, totalRooms);
+        const error = Math.abs(predicted.predictedOccupancy - actual.occupancyPercentage);
+        accuracyPoints.push({ error, actual: actual.occupancyPercentage, predicted: predicted.predictedOccupancy });
+      });
+    }
+
+    const avgError = accuracyPoints.length
+      ? accuracyPoints.reduce((s, p) => s + p.error, 0) / accuracyPoints.length
+      : null;
+    const accuracy = avgError !== null ? Math.max(0, Math.round((1 - avgError / 100) * 100)) : null;
+
+    // ── D. Last year same day occupancy ──
+    const lastYearSameDayStr = lastYear.toISOString().split('T')[0];
+    const lastYearSameDay = allHistory.find(h => h.date === lastYearSameDayStr);
+
+    // ── E. Trend: compare today's ML prediction vs last year same day ──
+    const todayPrediction = rawForecasts[0]?.predictedOccupancy || 0;
+    const lastYearOcc = lastYearSameDay?.occupancyPercentage || null;
+    const trend = lastYearOcc !== null
+      ? (todayPrediction > lastYearOcc ? 'up' : todayPrediction < lastYearOcc ? 'down' : 'stable')
+      : 'unknown';
+    const trendDiff = lastYearOcc !== null ? Math.round((todayPrediction - lastYearOcc) * 10) / 10 : 0;
+
+    // ── F. Peak months insight (last year) ──
+    const monthlyAvg = Array(12).fill(null).map(() => ({ sum: 0, count: 0 }));
+    allHistory.forEach(h => {
+      const m = new Date(h.date).getMonth();
+      monthlyAvg[m].sum += h.occupancyPercentage;
+      monthlyAvg[m].count++;
+    });
+    const peakMonth = monthlyAvg.reduce((best, m, idx) => {
+      const avg = m.count > 0 ? m.sum / m.count : 0;
+      return avg > (best.avg || 0) ? { idx, avg: Math.round(avg) } : best;
+    }, {});
+    const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    // ── G. Next 7-day forecast for chart ──
+    const next7 = rawForecasts.map(f => ({
+      date: f.date,
+      predicted: f.predictedOccupancy,
+      label: new Date(f.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric' })
+    }));
+
+    // ── H. Last year same window for chart overlay ──
+    const next7LastYear = next7.map(f => {
+      const lyDate = new Date(f.date);
+      lyDate.setFullYear(lyDate.getFullYear() - 1);
+      const lyStr = lyDate.toISOString().split('T')[0];
+      const actual = allHistory.find(h => h.date === lyStr);
+      return { date: lyStr, actual: actual?.occupancyPercentage ?? null };
+    });
+
+    return res.json({
+      today: todayStr,
+      todayPrediction,
+      lastYearSameDay: lastYearOcc,
+      lastYearSameDayDate: lastYearSameDayStr,
+      trend,
+      trendDiff,
+      modelAccuracy: accuracy,
+      avgError: avgError !== null ? Math.round(avgError * 10) / 10 : null,
+      totalHistoryDays: allHistory.length,
+      peakMonth: peakMonth.idx !== undefined ? { name: MONTH_NAMES[peakMonth.idx], avg: peakMonth.avg } : null,
+      next7Forecast: next7,
+      next7LastYear,
+      lastYearWindowData: lastYearActuals.map(h => ({
+        date: h.date,
+        occupancy: h.occupancyPercentage,
+        revenue: h.revenue
+      }))
+    });
+  } catch (error) {
+    console.error('Occupancy Suggestion Error:', error);
+    return res.status(500).json({ message: 'Server error generating occupancy suggestion' });
+  }
+};
+
 module.exports = {
   getBookings,
   addBooking,
   updateBookingStatus,
-  getOccupancyAnalytics
+  getOccupancyAnalytics,
+  getOccupancySuggestion
 };

@@ -1,8 +1,7 @@
 const { db } = require('../config/db');
 
-// List of pre-defined holidays and local events with their occupancy impact factors
 const HOLIDAYS_EVENTS = {
-  // Format: "MM-DD"
+
   '01-01': { name: "New Year's Day", impact: 20 },
   '02-14': { name: "Valentine's Day", impact: 15 },
   '07-04': { name: "Independence Day", impact: 25 },
@@ -12,7 +11,7 @@ const HOLIDAYS_EVENTS = {
   '12-25': { name: "Christmas Day", impact: 25 },
   '12-31': { name: "New Year's Eve", impact: 35 },
   
-  // Custom local festival seasons (simulated dynamically)
+
   '05-15': { name: "Spring Food & Wine Festival", impact: 15 },
   '05-16': { name: "Spring Food & Wine Festival", impact: 15 },
   '08-10': { name: "Summer Music Fest", impact: 30 },
@@ -20,7 +19,6 @@ const HOLIDAYS_EVENTS = {
   '08-12': { name: "Summer Music Fest", impact: 25 }
 };
 
-// Staffing Rules based on Occupancy and Department
 const calculateStaffForOccupancy = (occupancyPercent, guestCount) => {
   const frontDesk = occupancyPercent < 30 ? 1 : occupancyPercent < 60 ? 2 : occupancyPercent < 85 ? 3 : 4;
   const housekeeping = occupancyPercent < 30 ? 2 : occupancyPercent < 60 ? 5 : occupancyPercent < 85 ? 9 : 14;
@@ -36,11 +34,6 @@ const calculateStaffForOccupancy = (occupancyPercent, guestCount) => {
     'Maintenance': maintenance
   };
 };
-
-/**
- * Trains/fits a regression & seasonal model on historical occupancy records.
- * Returns coefficients and seasonality tables.
- */
 const fitForecastingModel = (history) => {
   if (history.length < 14) {
     // Return dummy model parameters if insufficient data

@@ -94,6 +94,13 @@ const api = {
     return handleResponse(res);
   },
 
+  async getOccupancySuggestion() {
+    const res = await fetch(`${BASE_URL}/occupancy/suggestion`, {
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
   // Staff endpoints
   async getEmployees() {
     const res = await fetch(`${BASE_URL}/staff`, {
@@ -200,6 +207,25 @@ const api = {
   getExportUrl(type, startDate, endDate) {
     const token = localStorage.getItem('token');
     return `${BASE_URL}/reports/export?type=${type}&startDate=${startDate}&endDate=${endDate}&token=${token}`;
+  },
+
+  // AI Assistant endpoints
+  async aiChat(message, pageContext, conversationHistory = []) {
+    const res = await fetch(`${BASE_URL}/ai/chat`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ message, pageContext, conversationHistory })
+    });
+    return handleResponse(res);
+  },
+
+  async seedData(startDate, endDate) {
+    const res = await fetch(`${BASE_URL}/ai/seed`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ startDate, endDate })
+    });
+    return handleResponse(res);
   }
 };
 

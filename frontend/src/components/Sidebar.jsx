@@ -7,7 +7,8 @@ import {
   FileSpreadsheet, 
   LogOut,
   UserCircle,
-  BadgeIndianRupee
+  BadgeIndianRupee,
+  DatabaseZap
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -21,6 +22,7 @@ const Sidebar = ({ currentPage, setCurrentPage }) => {
     { id: 'staff', name: 'Staff & Shift Registry', icon: Users },
     { id: 'costs', name: 'Work Details ', icon: BadgeIndianRupee },
     { id: 'reports', name: 'Analytical Reports', icon: FileSpreadsheet },
+    ...(user?.role === 'admin' ? [{ id: 'seeder', name: 'AI Data Seeder', icon: DatabaseZap, adminOnly: true }] : [])
   ];
 
   return (
@@ -39,22 +41,37 @@ const Sidebar = ({ currentPage, setCurrentPage }) => {
 
         {/* Navigation Items */}
         <nav className="p-4 space-y-1">
-          {menuItems.map((item) => {
+          {menuItems.map((item, idx) => {
             const Icon = item.icon;
             const isActive = currentPage === item.id;
             return (
-              <button
-                key={item.id}
-                onClick={() => setCurrentPage(item.id)}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
-                  isActive
-                    ? 'bg-gradient-to-r from-luxury-navy to-[#1e293b] dark:from-luxury-darkCard dark:to-slate-800 text-luxury-gold shadow-md border-l-2 border-luxury-gold'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-luxury-gold'
-                }`}
-              >
-                <Icon className={`h-5 w-5 ${isActive ? 'text-luxury-gold' : 'text-slate-400'}`} />
-                <span>{item.name}</span>
-              </button>
+              <div key={item.id}>
+                {/* Divider before admin-only items */}
+                {item.adminOnly && (
+                  <div className="border-t border-slate-200 dark:border-slate-700 my-2 pt-1">
+                    <p className="text-[9px] uppercase tracking-widest text-slate-400 dark:text-slate-600 px-4 mb-1 font-semibold">Admin Tools</p>
+                  </div>
+                )}
+                <button
+                  key={item.id}
+                  onClick={() => setCurrentPage(item.id)}
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
+                    isActive
+                      ? 'bg-gradient-to-r from-luxury-navy to-[#1e293b] dark:from-luxury-darkCard dark:to-slate-800 text-luxury-gold shadow-md border-l-2 border-luxury-gold'
+                      : item.adminOnly
+                      ? 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20 hover:text-amber-700'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-luxury-gold'
+                  }`}
+                >
+                  <Icon className={`h-5 w-5 ${isActive ? 'text-luxury-gold' : item.adminOnly ? 'text-amber-500' : 'text-slate-400'}`} />
+                  <span>{item.name}</span>
+                  {item.adminOnly && !isActive && (
+                    <span className="ml-auto text-[9px] font-bold uppercase tracking-wider bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-full border border-amber-200 dark:border-amber-700/50">
+                      Admin
+                    </span>
+                  )}
+                </button>
+              </div>
             );
           })}
         </nav>

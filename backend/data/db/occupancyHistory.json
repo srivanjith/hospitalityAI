@@ -8303,5 +8303,93 @@
     "id": "5xc9myl8c",
     "createdAt": "2026-06-06T07:50:59.818Z",
     "updatedAt": "2026-06-06T07:50:59.818Z"
+  },
+  {
+    "date": "2026-06-08",
+    "occupancyPercentage": 46.7,
+    "guestCount": 97,
+    "roomsOccupied": 56,
+    "revenue": 236967,
+    "_id": "h3o6ofuda",
+    "id": "uf6upnw9q",
+    "createdAt": "2026-06-16T08:24:16.459Z",
+    "updatedAt": "2026-06-16T08:24:16.459Z"
+  },
+  {
+    "date": "2026-06-09",
+    "occupancyPercentage": 52,
+    "guestCount": 97,
+    "roomsOccupied": 62,
+    "revenue": 189235,
+    "_id": "nvby46vrf",
+    "id": "45wqt84h7",
+    "createdAt": "2026-06-16T08:24:16.459Z",
+    "updatedAt": "2026-06-16T08:24:16.459Z"
+  },
+  {
+    "date": "2026-06-10",
+    "occupancyPercentage": 47,
+    "guestCount": 88,
+    "roomsOccupied": 56,
+    "revenue": 253358,
+    "_id": "4a122yi2i",
+    "id": "oqls5noql",
+    "createdAt": "2026-06-16T08:24:16.459Z",
+    "updatedAt": "2026-06-16T08:24:16.459Z"
+  },
+  {
+    "date": "2026-06-11",
+    "occupancyPercentage": 57.6,
+    "guestCount": 121,
+    "roomsOccupied": 69,
+    "revenue": 215152,
+    "_id": "0v0voxujk",
+    "id": "xvxf9us8m",
+    "createdAt": "2026-06-16T08:24:16.459Z",
+    "updatedAt": "2026-06-16T08:24:16.459Z"
+  },
+  {
+    "date": "2026-06-12",
+    "occupancyPercentage": 55.1,
+    "guestCount": 102,
+    "roomsOccupied": 66,
+    "revenue": 296028,
+    "_id": "gjn9kq6xr",
+    "id": "ijjdd4e6f",
+    "createdAt": "2026-06-16T08:24:16.459Z",
+    "updatedAt": "2026-06-16T08:24:16.459Z"
+  },
+  {
+    "date": "2026-06-13",
+    "occupancyPercentage": 69.4,
+    "guestCount": 126,
+    "roomsOccupied": 83,
+    "revenue": 502699,
+    "_id": "kmt3v2k3y",
+    "id": "zyybuujpv",
+    "createdAt": "2026-06-16T08:24:16.459Z",
+    "updatedAt": "2026-06-16T08:24:16.459Z"
+  },
+  {
+    "date": "2026-06-14",
+    "occupancyPercentage": 61.5,
+    "guestCount": 137,
+    "roomsOccupied": 74,
+    "revenue": 442337,
+    "_id": "4wlz7vio5",
+    "id": "lgjki4coe",
+    "createdAt": "2026-06-16T08:24:16.459Z",
+    "updatedAt": "2026-06-16T08:24:16.459Z"
+  },
+  {
+    "date": "2026-06-15",
+    "occupancyPercentage": 58.1,
+    "guestCount": 113,
+    "roomsOccupied": 70,
+    "revenue": 290946,
+    "_id": "e00bp06fw",
+    "id": "zzkq6m666",
+    "createdAt": "2026-06-16T08:24:16.459Z",
+    "updatedAt": "2026-06-16T08:24:16.459Z"
   }
 ]

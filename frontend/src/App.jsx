@@ -4,6 +4,7 @@ import { NotificationProvider } from './context/NotificationContext';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import NotificationDrawer from './components/NotificationDrawer';
+import AIChatWidget from './components/AIChatWidget';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Occupancy from './pages/Occupancy';
@@ -12,13 +13,13 @@ import StaffManagement from './pages/StaffManagement';
 import Reports from './pages/Reports';
 import GuestPortal from './pages/GuestPortal';
 import CostOptimization from './pages/CostOptimization';
+import DataSeeder from './pages/DataSeeder';
 
 const AppContent = () => {
   const { user, loading } = useAuth();
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // Loading Splash Screen
   if (loading) {
     return (
       <div className="min-h-screen bg-luxury-dark flex items-center justify-center">
@@ -33,7 +34,6 @@ const AppContent = () => {
     );
   }
 
-  // Not logged in route
   if (!user) {
     return <Login />;
   }
@@ -58,6 +58,8 @@ const AppContent = () => {
         return <CostOptimization />;
       case 'reports':
         return <Reports />;
+      case 'seeder':
+        return user.role === 'admin' ? <DataSeeder /> : <Dashboard setCurrentPage={setCurrentPage} />;
       default:
         return <Dashboard setCurrentPage={setCurrentPage} />;
     }
@@ -69,7 +71,8 @@ const AppContent = () => {
     forecasting: 'AI Predictive Forecasting & Shift Optimization',
     staff: 'Employee shift Scheduling & Performance',
     costs: 'Cost Optimization & Labor Analysis',
-    reports: 'Analytical Reports & Auditing'
+    reports: 'Analytical Reports & Auditing',
+    seeder: 'AI Synthetic Data Seeder'
   };
 
   return (
@@ -98,6 +101,9 @@ const AppContent = () => {
       <div className="print:hidden">
         <NotificationDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
       </div>
+
+      {/* AI Chat Widget - always visible for admin/manager */}
+      <AIChatWidget currentPage={currentPage} />
 
     </div>
   );

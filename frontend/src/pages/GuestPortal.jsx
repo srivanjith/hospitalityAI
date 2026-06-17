@@ -24,18 +24,114 @@ import {
   CalendarDays,
   X,
   Search,
-  Compass
+  Compass,
+  Bed,
+  User,
+  Info
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { sendBookingConfirmationEmail } from '../services/emailService';
 
+const facilityCategories = [
+  {
+    id: 'popular',
+    name: 'Most Popular',
+    icon: Star,
+    items: [
+      { name: 'Outdoor swimming pool', badge: 'Free' },
+      { name: 'Free WiFi' },
+      { name: 'Free parking' },
+      { name: 'Airport shuttle', badge: 'Additional charge' },
+      { name: 'Family rooms' },
+      { name: 'Spa and wellness centre', badge: 'Additional charge' },
+      { name: 'Fitness centre' },
+      { name: '4 restaurants' },
+      { name: 'Bar' },
+      { name: 'Very Good Breakfast' }
+    ]
+  },
+  {
+    id: 'wellness',
+    name: 'Wellness & Pools',
+    icon: Waves,
+    items: [
+      { name: 'Kids\' pool' },
+      { name: 'Personal trainer & Fitness' },
+      { name: 'Spa/wellness packages' },
+      { name: 'Foot bath & Steam room' },
+      { name: 'Spa lounge/relaxation area' },
+      { name: 'Body wrap & scrub' },
+      { name: 'Beauty & Hair services' },
+      { name: 'Hot tub & Jacuzzi', badge: 'Additional charge' },
+      { name: 'Massage therapies', badge: 'Additional charge' },
+      { name: 'Sauna facilities', badge: 'Additional charge' }
+    ]
+  },
+  {
+    id: 'dining',
+    name: 'Food & Drink',
+    icon: Utensils,
+    items: [
+      { name: '4 Restaurants & On-site Bar' },
+      { name: 'Coffee house on site' },
+      { name: 'Breakfast in the room / Buffet' },
+      { name: 'Kid-friendly buffet & Kids\' meals' },
+      { name: 'Special diet menus (on request)' },
+      { name: 'Fruits & Wine/Champagne', badge: 'Additional charge' }
+    ]
+  },
+  {
+    id: 'reception',
+    name: 'Services & Business',
+    icon: ConciergeBell,
+    items: [
+      { name: '24-hour Front Desk' },
+      { name: 'Express Check-In/Check-Out' },
+      { name: 'Concierge & Luggage Storage' },
+      { name: 'Tour Desk & Currency Exchange' },
+      { name: 'Invoice provided' },
+      { name: 'Daily Housekeeping' },
+      { name: 'Laundry, Dry Cleaning & Ironing', badge: 'Additional charge' },
+      { name: 'Meeting, Banquet & Business centre', badge: 'Additional charge' }
+    ]
+  },
+  {
+    id: 'room',
+    name: 'Room & General',
+    icon: Hotel,
+    items: [
+      { name: 'Air conditioning & Soundproofing' },
+      { name: 'Lift & Central Heating' },
+      { name: 'Ironing & Room service' },
+      { name: 'Tumble dryer & Clothes rack' },
+      { name: 'Fold-up bed & Sofa' },
+      { name: 'Desk / Workspace' },
+      { name: 'Valet parking' },
+      { name: 'Bicycle rental & Happy hour', badge: 'Additional charge' }
+    ]
+  },
+  {
+    id: 'safety',
+    name: 'Security & Languages',
+    icon: Shield,
+    items: [
+      { name: '24-hour Security & Key card access' },
+      { name: 'CCTV in common areas' },
+      { name: 'Security Alarm & Safety deposit box' },
+      { name: 'Fire extinguishers' },
+      { name: 'Languages spoken: English, Hindi, Tamil' }
+    ]
+  }
+];
+
 const GuestPortal = () => {
   const { user, logout } = useAuth();
   
-  // Date and Reservation states
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
+  const [checkInTime, setCheckInTime] = useState('14:00');
+  const [checkOutTime, setCheckOutTime] = useState('12:00');
   const [guestsCount, setGuestsCount] = useState(1);
   const [roomType, setRoomType] = useState('Standard Room');
   
@@ -44,8 +140,25 @@ const GuestPortal = () => {
   const [errorMsg, setErrorMsg] = useState(null);
   const [loading, setLoading] = useState(false);
   const [recentBookings, setRecentBookings] = useState([]);
+  const [activeFacilityCategory, setActiveFacilityCategory] = useState('popular');
+  const [activeRoomCategory, setActiveRoomCategory] = useState('All');
+  const [selectedRoomShowcase, setSelectedRoomShowcase] = useState(null);
+  const [activeImageIdx, setActiveImageIdx] = useState(0);
+  const [bookingStep, setBookingStep] = useState('details'); // 'details' | 'payment' | 'card_details'
+  const [cardholderName, setCardholderName] = useState('');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvv, setCardCvv] = useState('');
 
-  // Staff Report states
+  const calculateTotalCost = () => {
+    if (!checkIn || !checkOut) return 0;
+    const days = Math.round((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24));
+    if (days <= 0) return 0;
+    
+    const roomObj = rooms.find(r => r.name === roomType) || { price: 120 };
+    return roomObj.price * days;
+  };
+
   const [reportName, setReportName] = useState(user?.name || '');
   const [reportRoomNo, setReportRoomNo] = useState('');
   const [reportStaffName, setReportStaffName] = useState('');
@@ -110,9 +223,21 @@ const GuestPortal = () => {
     return () => clearTimeout(timer);
   }, [bookingSuccess, loadGuestBookings]);
 
+  useEffect(() => {
+    setActiveImageIdx(0);
+  }, [selectedRoomShowcase]);
+
   const handleOpenBooking = (type) => {
     setRoomType(type);
     setShowBookModal(true);
+    setBookingStep('details');
+    setErrorMsg(null);
+    setCardholderName(user.name);
+    setCardNumber('');
+    setCardExpiry('');
+    setCardCvv('');
+    setCheckInTime('14:00');
+    setCheckOutTime('12:00');
   };
 
   const handleQuickSearch = (e) => {
@@ -124,25 +249,30 @@ const GuestPortal = () => {
     }
   };
 
-  const handleCreateBooking = async (e) => {
+  const handleValidateDetails = (e) => {
     e.preventDefault();
     setErrorMsg(null);
-    setLoading(true);
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const checkInDate = new Date(checkIn);
     if (checkInDate < today) {
-      setErrorMsg('invalid date');
-      setLoading(false);
+      setErrorMsg('Arrival date cannot be in the past');
       return;
     }
 
     if (new Date(checkOut) <= new Date(checkIn)) {
-      setErrorMsg('Check-out date must be after check-in date');
-      setLoading(false);
+      setErrorMsg('Departure date must be after arrival date');
       return;
     }
+
+    setBookingStep('payment');
+  };
+
+  const handleCompleteBooking = async (method, e) => {
+    if (e) e.preventDefault();
+    setErrorMsg(null);
+    setLoading(true);
 
     try {
       const bookingRes = await api.addBooking({
@@ -150,6 +280,8 @@ const GuestPortal = () => {
         roomType,
         checkIn,
         checkOut,
+        checkInTime,
+        checkOutTime,
         guestsCount: Number(guestsCount)
       });
       
@@ -166,6 +298,7 @@ const GuestPortal = () => {
       setTimeout(() => {
         setBookingSuccess(false);
         setShowBookModal(false);
+        setBookingStep('details');
       }, 2500);
     } catch (err) {
       setErrorMsg(err.message || 'Failed to submit reservation.');
@@ -177,32 +310,94 @@ const GuestPortal = () => {
   // Rooms dataset
   const rooms = [
     {
-      name: 'Standard Room',
-      description: 'Cozy and sophisticated styling. Perfect for solo executives or short corporate stops.',
+      name: 'Guest room, 1 King, City view, Atrium Building, Pool access',
+      description: 'Sophisticated guest room in our main Atrium building featuring a plush King bed and direct pool access.',
       price: 120,
-      amenities: ['King Size Bed', 'Smart TV', 'Workspace', 'En-suite bath'],
-      gradient: 'from-slate-700 to-slate-900'
+      amenities: ['1 King Bed', 'City View', 'Atrium Building', 'Pool Access'],
+      gradient: 'from-slate-700 to-slate-900',
+      bedText: '1 king bed',
+      guestsLayout: '3+1',
+      category: 'Standard'
     },
     {
-      name: 'Deluxe Room',
-      description: 'Spacious accommodation equipped with luxury oceanfront views and a personal balcony terrace.',
+      name: 'Guest room, 2 Queen or 2 Twin/Single Bed(s), City view',
+      description: 'Comfortable layout containing two Twin or Queen beds, matching modern design lines with city views.',
+      price: 140,
+      amenities: ['2 Twin / Queen Beds', 'City View', 'Workspace', 'En-suite bath'],
+      gradient: 'from-slate-800 to-slate-955',
+      bedText: '2 twin beds',
+      guestsLayout: '3',
+      category: 'Standard'
+    },
+    {
+      name: 'Concierge level, Guest room, 1 King, City view, Corner room',
+      description: 'Spacious corner room positioning on the concierge floor, offering extra comfort parameters and VIP access.',
+      price: 160,
+      amenities: ['1 King Bed', 'Concierge Level Access', 'Corner Room Space', 'City View'],
+      gradient: 'from-[#805e0c] to-[#1a2333]',
+      bedText: '1 king bed',
+      guestsLayout: '3',
+      category: 'Executive'
+    },
+    {
+      name: 'Club lounge access, Guest room, 2 Twin/Single Bed(s)',
+      description: 'Enjoy dedicated access to our private Club Lounge, featuring all-day premium refreshments and drinks.',
       price: 180,
-      amenities: ['Ocean View balcony', 'Deep Soaking Tub', 'Espresso Station', 'Lounge Chair'],
-      gradient: 'from-[#aa7c11] to-[#1e293b]'
+      amenities: ['2 Twin Beds', 'Club Lounge Access', 'Gourmet Buffet', 'Desk Area'],
+      gradient: 'from-[#aa7c11] to-[#1e293b]',
+      bedText: '2 twin beds',
+      guestsLayout: '3',
+      category: 'Standard'
     },
     {
-      name: 'Executive Suite',
-      description: 'Expanded layout featuring a private lounge partition, dedicated bar counter, and premier sights.',
-      price: 280,
-      amenities: ['Separate Lounge Area', 'Private Dry Bar', 'Panoramic Views', 'Priority Concierge'],
-      gradient: 'from-luxury-navy to-[#131926]'
+      name: 'Club lounge access, 1 Bedroom Junior Suite, 1 King',
+      description: 'Sophisticated junior suite layout containing dedicated partition living spaces and executive Club Lounge benefits.',
+      price: 220,
+      amenities: ['1 King Bed', 'Junior Lounge partition', 'Club Lounge Access', 'Walk-in Shower'],
+      gradient: 'from-[#92680a] to-[#121824]',
+      bedText: '1 king bed',
+      guestsLayout: '3+1',
+      category: 'Executive'
     },
     {
-      name: 'Presidential Suite',
-      description: 'The pinnacle of luxury. Absolute privacy across a full floor, private butler service, and jacuzzi deck.',
-      price: 450,
-      amenities: ['Full Floor Penthouse', 'Dedicated Butler', 'Private Roof Jacuzzi', 'Chef Kitchen'],
-      gradient: 'from-[#0b0f19] via-[#aa7c11] to-[#0b0f19]'
+      name: 'Deluxe Suite, Club lounge access, 1 Bedroom Larger Suite',
+      description: 'Expansive executive luxury featuring separate living room space, walk-in closets, and priority access to our club services.',
+      price: 265,
+      amenities: ['1 King Bed', 'Expanded Living Room', 'Club Lounge Access', 'Deep Soaking Tub'],
+      gradient: 'from-luxury-navy to-[#131926]',
+      bedText: '1 king bed',
+      guestsLayout: '3+1',
+      category: 'Luxury'
+    },
+    {
+      name: 'Club lounge access, 1 Bedroom Executive Suite, 1 King',
+      description: 'The ultimate workspace suite. Features high-speed fiber internet, executive styling parameters, and priority concierge.',
+      price: 300,
+      amenities: ['1 King Bed', 'Executive Workspace', 'Club Lounge Access', 'Express Butler Sync'],
+      gradient: 'from-slate-900 via-luxury-navy to-[#0b0e14]',
+      bedText: '1 king bed',
+      guestsLayout: '3+1',
+      category: 'Executive'
+    },
+    {
+      name: 'TamilNadu Suite, Club lounge access, 1 King, City view',
+      description: 'A beautifully decorated cultural heritage suite styled with curated Tamil Nadu art pieces and an expansive city view balcony.',
+      price: 380,
+      amenities: ['1 King Bed', 'TamilNadu Heritage Decor', 'Club Lounge Access', 'Private Terrace Balcony'],
+      gradient: 'from-[#aa7c11] via-[#3b2a0c] to-[#0b0e14]',
+      bedText: '1 king bed',
+      guestsLayout: '3+1',
+      category: 'Executive'
+    },
+    {
+      name: 'Concierge level, 2 Bedroom Presidential Suite, 2 King',
+      description: 'The absolute peak of luxury. Two oversized master suites, a rooftop terrace with a private jacuzzi pool, and a butler team.',
+      price: 550,
+      amenities: ['2 King Beds', 'Full Floor Penthouse', 'Private Roof Jacuzzi', 'Dedicated Butler'],
+      gradient: 'from-[#0b0f19] via-[#aa7c11] to-[#0b0f19]',
+      bedText: '1 king bed',
+      guestsLayout: '3+1',
+      category: 'Luxury'
     }
   ];
 
@@ -218,14 +413,221 @@ const GuestPortal = () => {
     }
   ];
 
+  const roomCategories = [
+    { id: 'All', name: 'All Options', icon: Compass, desc: 'Browse our complete catalog of luxury rooms and suites.' },
+    { id: 'Standard', name: 'Standard Rooms', icon: Bed, desc: 'Cozy and elegant room layouts providing top convenience.' },
+    { id: 'Executive', name: 'Executive & Club', icon: ConciergeBell, desc: 'Premium settings with private Club Lounge privileges.' },
+    { id: 'Luxury', name: 'Luxury Suites', icon: Star, desc: 'Top penthouses with private jacuzzi pools and butler desk.' }
+  ];
+
+  const renderRoomShowcase = (room) => {
+    const showcaseImages = [
+      { src: '/luxury_bedroom.png', title: 'Master Bedroom & Sleeping Area', label: 'Primary Area' },
+      { src: '/luxury_hall.png', title: 'Gilded Living Hall', label: 'Living Area' },
+      { src: '/luxury_kitchen.png', title: 'En-suite Kitchen', label: 'Dining Area' },
+      { src: '/luxury_washroom.png', title: 'Marble Washroom', label: 'Restroom' }
+    ];
+
+    const handlePrevImage = () => {
+      setActiveImageIdx((prev) => (prev === 0 ? showcaseImages.length - 1 : prev - 1));
+    };
+
+    const handleNextImage = () => {
+      setActiveImageIdx((prev) => (prev === showcaseImages.length - 1 ? 0 : prev + 1));
+    };
+
+    return (
+      <div className="space-y-8 animate-fade-in text-left">
+        {/* Main Grid: Carousel Left, Metadata Right */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-stretch mt-6">
+          {/* Left Column (Image & Progress Indicator) */}
+          <div className="lg:col-span-6 space-y-4 flex flex-col justify-between">
+            <div className="relative overflow-hidden rounded-3xl border border-slate-200/50 dark:border-slate-800/50 shadow-lg h-[360px] sm:h-[400px]">
+              <img 
+                src={showcaseImages[activeImageIdx].src} 
+                alt={showcaseImages[activeImageIdx].title} 
+                className="w-full h-full object-cover transition-all duration-500 animate-fade-in"
+                key={activeImageIdx}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent pointer-events-none"></div>
+              
+              {/* Category Badge */}
+              <div className="absolute top-4 left-4">
+                <span className="text-[8px] font-extrabold tracking-widest uppercase bg-luxury-gold text-luxury-navy px-2.5 py-1 rounded-md shadow-md">
+                  {room.category} Tier
+                </span>
+              </div>
+
+              {/* Slide metadata overlays */}
+              <div className="absolute bottom-20 left-6 text-white pointer-events-none">
+                <span className="text-[9px] font-bold tracking-widest uppercase text-luxury-gold block">
+                  {showcaseImages[activeImageIdx].label}
+                </span>
+                <h4 className="font-serif text-md font-bold mt-0.5">
+                  {showcaseImages[activeImageIdx].title}
+                </h4>
+              </div>
+
+              {/* Navigation arrows (Dribbble styled) */}
+              <div className="absolute bottom-0 left-0 flex overflow-hidden rounded-tr-3xl">
+                <button 
+                  onClick={handlePrevImage} 
+                  className="w-14 h-14 bg-white/90 dark:bg-luxury-darkCard/90 hover:bg-white dark:hover:bg-luxury-darkCard flex items-center justify-center cursor-pointer transition-colors border-none text-slate-800 dark:text-white"
+                  type="button"
+                >
+                  <span className="text-lg">←</span>
+                </button>
+                <button 
+                  onClick={handleNextImage} 
+                  className="w-14 h-14 bg-[#8f8059] hover:bg-[#7a6e4d] flex items-center justify-center cursor-pointer transition-colors border-none text-white font-bold"
+                  type="button"
+                >
+                  <span className="text-lg">→</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Carousel slider progress tracker centered below image */}
+            <div className="flex items-center justify-center space-x-4 text-xs font-mono font-bold tracking-widest text-slate-400 py-1">
+              <span>{`0${activeImageIdx + 1}`}</span>
+              <div className="relative w-28 h-[2px] bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div 
+                  className="absolute top-0 left-0 h-full bg-[#8f8059] transition-all duration-300"
+                  style={{ width: `${((activeImageIdx + 1) / showcaseImages.length) * 100}%` }}
+                ></div>
+              </div>
+              <span>{`0${showcaseImages.length}`}</span>
+            </div>
+          </div>
+
+          {/* Right Column: Title details and amenities grid */}
+          <div className="lg:col-span-6 flex flex-col justify-between space-y-6">
+            <div className="space-y-4">
+              {/* Back navigation & Nightly price */}
+              <div className="flex items-center justify-between">
+                <button 
+                  onClick={() => setSelectedRoomShowcase(null)}
+                  className="text-[11px] font-bold uppercase tracking-wider text-slate-450 hover:text-luxury-gold transition-colors flex items-center space-x-1 cursor-pointer bg-transparent border-none focus:outline-none"
+                >
+                  <span>← Back to accommodations</span>
+                </button>
+                <div className="text-right bg-white dark:bg-luxury-darkCard border border-slate-200/40 dark:border-slate-850 px-4 py-1.5 rounded-full shadow-sm">
+                  <span className="text-[10px] font-bold text-[#8f8059] tracking-wider uppercase">₹{room.price}/Day</span>
+                </div>
+              </div>
+
+              {/* Serif Heading with gold divider */}
+              <div className="flex items-center space-x-4 pt-2">
+                <h3 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-luxury-navy dark:text-white leading-tight">
+                  Find your comfort stay with Cozy Corner
+                </h3>
+                <div className="hidden sm:block h-[2px] w-12 bg-[#8f8059] flex-shrink-0"></div>
+              </div>
+
+              {/* Sub-header or Room Name */}
+              <div className="flex items-center space-x-2">
+                <span className="text-[9px] font-bold tracking-widest uppercase bg-luxury-gold/15 text-[#8f8059] px-2.5 py-0.5 rounded-md">
+                  {room.category} Class
+                </span>
+                <span className="text-[10px] font-semibold text-slate-450 dark:text-slate-400">{room.name}</span>
+              </div>
+
+              {/* Dynamic Description Paragraph */}
+              <p className="text-xs text-slate-550 dark:text-slate-400 leading-relaxed font-sans max-w-xl">
+                {room.description} Extended design specifications feature central climate controls, gold-accent detailing, soundproofing layers, and executive high-speed connection networks. Our predictive room scheduling system ensures your suite is pre-cooled, lit, and fully prepped for your exact arrival window.
+              </p>
+
+              {/* Double Column Checklist */}
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3 pt-2">
+                <div className="flex items-center space-x-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[#8f8059]/15 text-[#8f8059] text-[10px] font-bold">✓</span>
+                  <span>Virtual Office Setup</span>
+                </div>
+                <div className="flex items-center space-x-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[#8f8059]/15 text-[#8f8059] text-[10px] font-bold">✓</span>
+                  <span>Open Workspace</span>
+                </div>
+                <div className="flex items-center space-x-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[#8f8059]/15 text-[#8f8059] text-[10px] font-bold">✓</span>
+                  <span>Space for Event</span>
+                </div>
+                <div className="flex items-center space-x-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[#8f8059]/15 text-[#8f8059] text-[10px] font-bold">✓</span>
+                  <span>Chill Out Zone</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 3-Column Features Footer */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-12 border-t border-slate-200/50 dark:border-slate-800/50 mt-12">
+          {/* Column 1: Location */}
+          <div className="space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-[#8f8059]/10 border border-[#8f8059]/20 flex items-center justify-center">
+              <MapPin className="w-6 h-6 text-[#8f8059]" />
+            </div>
+            <div className="space-y-1.5">
+              <h4 className="font-serif text-sm font-bold text-luxury-navy dark:text-white">Premium Location</h4>
+              <p className="text-[11px] text-slate-450 dark:text-slate-450 leading-relaxed font-sans">
+                Nestled directly along Erode-Sathy road corridor with custom coordinates mapping Sathy-Erode.
+              </p>
+            </div>
+          </div>
+
+          {/* Column 2: Availability */}
+          <div className="space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-[#8f8059]/10 border border-[#8f8059]/20 flex items-center justify-center">
+              <Bed className="w-6 h-6 text-[#8f8059]" />
+            </div>
+            <div className="space-y-1.5">
+              <h4 className="font-serif text-sm font-bold text-luxury-navy dark:text-white">Pre-Cooled & Sanitized</h4>
+              <p className="text-[11px] text-slate-450 dark:text-slate-450 leading-relaxed font-sans">
+                Suite elements are automatically pre-cooled, sanitized, and configured for your specific arrival window.
+              </p>
+            </div>
+          </div>
+
+          {/* Column 3: Wifi */}
+          <div className="space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-[#8f8059]/10 border border-[#8f8059]/20 flex items-center justify-center">
+              <Wifi className="w-6 h-6 text-[#8f8059]" />
+            </div>
+            <div className="space-y-1.5">
+              <h4 className="font-serif text-sm font-bold text-luxury-navy dark:text-white">100% Fiber Internet</h4>
+              <p className="text-[11px] text-slate-450 dark:text-slate-450 leading-relaxed font-sans">
+                Complimentary high-speed fiber internet with dedicated private suite access points.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Booking Footer Card */}
+        <div className="glass-panel p-6 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
+          <div className="text-center sm:text-left">
+            <h4 className="font-serif text-md font-bold dark:text-white">Ready to experience this suite?</h4>
+            <p className="text-[11px] text-slate-400 mt-1">Select your dates in the next step to confirm your stay details.</p>
+          </div>
+          <button
+            onClick={() => handleOpenBooking(room.name)}
+            className="w-full sm:w-auto btn-gold px-8 py-3 text-xs tracking-wider uppercase font-bold flex items-center justify-center space-x-1.5 shadow-md hover:shadow-glow transform hover:-translate-y-0.5 transition-all duration-300"
+          >
+            <span>Book Suite Now</span>
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-luxury-cream dark:bg-luxury-dark text-slate-800 dark:text-slate-100 flex flex-col transition-colors duration-300 font-sans">
       
       {/* 1. Header Navigation */}
-      <header className="fixed top-0 left-0 right-0 h-20 glass-panel border-b border-slate-200/50 dark:border-slate-800/50 z-40 flex items-center justify-between px-8 sm:px-16">
+      <header className="fixed top-0 left-0 right-0 h-20 glass-panel border-b border-slate-200/50 dark:border-slate-800/50 z-40 flex items-center justify-between px-8 sm:px-16 animate-slide-down">
         {/* Brand Logo */}
         <div className="flex items-center space-x-2">
-          <Hotel className="h-6 w-6 text-luxury-gold" />
+          <Hotel className="h-6 w-6 text-luxury-gold animate-pulse" />
           <div>
             <h1 className="text-lg font-bold tracking-wider font-serif text-luxury-navy dark:text-white leading-none">
               THE GRAND ROYAL
@@ -236,11 +638,12 @@ const GuestPortal = () => {
 
         {/* Links Navigation */}
         <nav className="hidden md:flex items-center space-x-8 text-xs font-semibold uppercase tracking-wider">
-          <a href="#home" className="hover:text-luxury-gold transition-colors">Home</a>
-          <a href="#rooms-section" className="hover:text-luxury-gold transition-colors">Rooms</a>
-          <a href="#facilities-section" className="hover:text-luxury-gold transition-colors">Facilities</a>
-          <a href="#gallery-section" className="hover:text-luxury-gold transition-colors">Gallery</a>
-          <a href="#contact-section" className="hover:text-luxury-gold transition-colors">Contact</a>
+          <a href="#home" className="hover:text-luxury-gold transition-colors relative after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-[1px] after:bg-luxury-gold hover:after:w-full after:transition-all">Home</a>
+          <a href="#rooms-section" className="hover:text-luxury-gold transition-colors relative after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-[1px] after:bg-luxury-gold hover:after:w-full after:transition-all">Rooms</a>
+          <a href="#facilities-section" className="hover:text-luxury-gold transition-colors relative after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-[1px] after:bg-luxury-gold hover:after:w-full after:transition-all">Facilities</a>
+          <a href="#rules-section" className="hover:text-luxury-gold transition-colors relative after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-[1px] after:bg-luxury-gold hover:after:w-full after:transition-all">Rules</a>
+          <a href="#gallery-section" className="hover:text-luxury-gold transition-colors relative after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-[1px] after:bg-luxury-gold hover:after:w-full after:transition-all">Gallery</a>
+          <a href="#contact-section" className="hover:text-luxury-gold transition-colors relative after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-[1px] after:bg-luxury-gold hover:after:w-full after:transition-all">Contact</a>
         </nav>
 
         {/* User profile & logout */}
@@ -265,31 +668,31 @@ const GuestPortal = () => {
         {/* Custom Visual Gradient Backdrop simulating a luxury hotel suite */}
         <div className="absolute inset-0 bg-gradient-to-tr from-[#0b0f19] via-[#0f172a] to-[#251f14] z-0"></div>
         {/* Abstract Room Design Element */}
-        <div className="absolute top-[20%] right-[-10%] w-[50%] h-[60%] rounded-full bg-luxury-gold/5 blur-[120px] pointer-events-none"></div>
-        <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[60%] rounded-full bg-[#aa7c11]/5 blur-[120px] pointer-events-none"></div>
+        <div className="absolute top-[20%] right-[-10%] w-[50%] h-[60%] rounded-full bg-luxury-gold/5 blur-[120px] pointer-events-none animate-float"></div>
+        <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[60%] rounded-full bg-[#aa7c11]/5 blur-[120px] pointer-events-none animate-float-reverse"></div>
         
         {/* Hero Content Overlay */}
-        <div className="relative z-10 text-center max-w-4xl px-6 space-y-6 animate-fade-in mt-12">
+        <div className="relative z-10 text-center max-w-4xl px-6 space-y-6 mt-12">
           {/* Rating */}
-          <div className="flex items-center justify-center space-x-1">
+          <div className="flex items-center justify-center space-x-1 animate-slide-up animation-delay-100">
             {[1, 2, 3, 4, 5].map(i => (
               <Star key={i} className="h-4 w-4 text-luxury-gold fill-luxury-gold" />
             ))}
           </div>
           
-          <h2 className="text-4xl md:text-6xl font-bold font-serif text-white leading-tight tracking-wide">
+          <h2 className="text-4xl md:text-6xl font-bold font-serif text-white leading-tight tracking-wide animate-slide-up animation-delay-200">
             Experience True Luxury
           </h2>
           
-          <p className="text-md md:text-lg text-luxury-goldLight font-medium tracking-widest font-mono uppercase">
+          <p className="text-md md:text-lg text-luxury-goldLight font-medium tracking-widest font-mono uppercase animate-slide-up animation-delay-300">
             Your Golden Haven in Miami
           </p>
           
-          <p className="text-sm md:text-base text-slate-300 max-w-2xl mx-auto leading-relaxed font-sans">
+          <p className="text-sm md:text-base text-slate-300 max-w-2xl mx-auto leading-relaxed font-sans animate-slide-up animation-delay-400">
             Escape to an oceanfront sanctuary of unparalleled comfort. Curated gourmet dining, exclusive wellness spas, and gold-standard personal service await your arrival.
           </p>
 
-          <div className="pt-4">
+          <div className="pt-4 animate-slide-up animation-delay-500">
             <a 
               href="#rooms-section" 
               className="btn-gold px-8 py-3 text-sm tracking-widest uppercase font-bold flex items-center justify-center space-x-2 inline-flex"
@@ -301,14 +704,14 @@ const GuestPortal = () => {
         </div>
 
         {/* Scroll Indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 text-slate-400 text-xs tracking-widest uppercase flex flex-col items-center space-y-1">
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 text-slate-400 text-xs tracking-widest uppercase flex flex-col items-center space-y-1 animate-pulse">
           <span className="animate-bounce">↓</span>
           <span>Scroll Down</span>
         </div>
       </section>
 
       {/* 3. Availability Quick Search Bar */}
-      <section className="relative z-20 max-w-5xl w-full mx-auto px-6 -mt-16">
+      <section className="relative z-20 max-w-5xl w-full mx-auto px-6 -mt-16 animate-slide-up animation-delay-700">
         <form onSubmit={handleQuickSearch} className="glass-panel p-6 rounded-2xl shadow-2xl border border-slate-200/60 dark:border-slate-800/60 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
           {/* Check-In */}
           <div className="space-y-1">
@@ -463,63 +866,111 @@ const GuestPortal = () => {
 
       {/* 6. Featured Room Types with booking buttons */}
       <section id="rooms-section" className="py-20 px-8 sm:px-16 max-w-6xl mx-auto space-y-12">
-        <div className="text-center space-y-3">
-          <span className="text-xs uppercase tracking-widest text-luxury-goldDark dark:text-luxury-gold font-bold">Featured Suites</span>
-          <h3 className="text-3xl md:text-4xl font-serif font-bold dark:text-white">Curated Accommodations</h3>
-          <p className="text-xs text-slate-400 max-w-md mx-auto">Select your layout suite. All rooms feature elegant aesthetics, high-speed Wi-Fi, and 24/7 personal room service.</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {rooms.map((room) => (
-            <div 
-              key={room.name} 
-              className="glass-panel border border-slate-200/50 dark:border-slate-800/50 rounded-2xl overflow-hidden shadow-md flex flex-col justify-between"
-            >
-              {/* Image box representation with luxury gradients */}
-              <div className={`h-48 bg-gradient-to-r ${room.gradient} p-6 flex flex-col justify-between text-white relative`}>
-                <div className="absolute inset-0 bg-black/10"></div>
-                <div className="relative z-10 flex justify-between items-start">
-                  <span className="text-[10px] font-bold tracking-widest uppercase bg-black/30 backdrop-blur-md px-2.5 py-1 rounded-full">
-                    Luxury Standard
-                  </span>
-                  <div className="text-right">
-                    <span className="text-2xl font-serif font-bold text-luxury-gold">₹{room.price}</span>
-                    <span className="text-[10px] text-slate-350 block">/ DAY</span>
-                  </div>
-                </div>
-                <h4 className="relative z-10 font-serif text-xl font-bold tracking-wide">{room.name}</h4>
-              </div>
-
-              {/* Card Details */}
-              <div className="p-6 space-y-6 flex-1 flex flex-col justify-between">
-                <div className="space-y-4">
-                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                    {room.description}
-                  </p>
-                  
-                  {/* Amenities */}
-                  <div className="grid grid-cols-2 gap-2">
-                    {room.amenities.map((amenity) => (
-                      <div key={amenity} className="flex items-center space-x-1.5 text-[10px] text-slate-500">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-luxury-gold" />
-                        <span>{amenity}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-slate-100 dark:border-slate-850">
-                  <button
-                    onClick={() => handleOpenBooking(room.name)}
-                    className="w-full btn-gold text-xs py-2.5 uppercase tracking-wider font-bold"
-                  >
-                    Book Now
-                  </button>
-                </div>
-              </div>
+        {selectedRoomShowcase ? (
+          renderRoomShowcase(selectedRoomShowcase)
+        ) : (
+          <>
+            <div className="text-center space-y-3">
+              <span className="text-xs uppercase tracking-widest text-luxury-goldDark dark:text-luxury-gold font-bold">Featured Suites</span>
+              <h3 className="text-3xl md:text-4xl font-serif font-bold dark:text-white">Curated Accommodations</h3>
+              <p className="text-xs text-slate-400 max-w-md mx-auto">Select your layout suite. All rooms feature elegant aesthetics, high-speed Wi-Fi, and 24/7 personal room service.</p>
             </div>
-          ))}
-        </div>
+
+            {/* Category selection cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              {roomCategories.map((cat) => {
+                const CatIcon = cat.icon;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => setActiveRoomCategory(cat.id)}
+                    className={`p-4 rounded-xl border text-center transition-all duration-300 cursor-pointer flex flex-col justify-center items-center h-28 shadow-sm hover:shadow-glow ${
+                      activeRoomCategory === cat.id
+                        ? 'bg-luxury-navy border-luxury-gold text-luxury-gold dark:bg-luxury-darkCard dark:border-luxury-gold shadow-glow'
+                        : 'bg-white border-slate-200/50 text-slate-500 dark:bg-luxury-darkCard/50 dark:border-slate-800/50 dark:text-slate-400 hover:border-luxury-gold/50'
+                    }`}
+                  >
+                    <CatIcon className="h-5 w-5 mb-2 text-luxury-gold" />
+                    <span className="text-[11px] font-bold uppercase tracking-wider block">{cat.name}</span>
+                    <span className="text-[8px] text-slate-405 dark:text-slate-500 hidden sm:block mt-1 leading-normal font-sans">{cat.desc}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Grid Catalog */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 animate-fade-in">
+              {rooms
+                .filter((room) => activeRoomCategory === 'All' || room.category === activeRoomCategory)
+                .map((room) => (
+                  <div 
+                    key={room.name} 
+                    className="glass-panel border border-slate-200/50 dark:border-slate-800/50 rounded-2xl overflow-hidden shadow-md flex flex-col justify-between hover:shadow-glow hover:-translate-y-[2px] active:translate-y-0 transition-all duration-300 group"
+                  >
+                    {/* Visual Card Header */}
+                    <div className="h-44 bg-slate-900 overflow-hidden relative">
+                      <img 
+                        src="/luxury_bedroom.png" 
+                        alt={room.name} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent"></div>
+                      
+                      {/* Price Badge */}
+                      <div className="absolute bottom-3 right-3 text-right text-white">
+                        <span className="text-lg font-serif font-bold text-luxury-gold">₹{room.price}</span>
+                        <span className="text-[9px] text-slate-350 block leading-none mt-0.5">/ DAY</span>
+                      </div>
+
+                      {/* Category Badge */}
+                      <div className="absolute top-3 left-3">
+                        <span className="text-[8px] font-extrabold tracking-widest uppercase bg-luxury-gold text-luxury-navy px-2 py-0.5 rounded-md shadow-sm">
+                          {room.category}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Card Body */}
+                    <div className="p-5 flex-1 flex flex-col justify-between space-y-4 text-left">
+                      <div className="space-y-2.5">
+                        <h4 
+                          onClick={() => setSelectedRoomShowcase(room)}
+                          className="font-serif text-[15px] font-bold text-luxury-navy dark:text-white leading-snug group-hover:text-luxury-gold cursor-pointer transition-colors duration-200"
+                        >
+                          {room.name}
+                        </h4>
+                        
+                        <div className="flex items-center space-x-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                          <Bed className="h-3.5 w-3.5 text-luxury-goldDark dark:text-luxury-gold/60" />
+                          <span>{room.bedText}</span>
+                        </div>
+
+                        <div className="flex items-center text-[11px] text-slate-500 dark:text-slate-450">
+                          <Users className="h-3.5 w-3.5 text-luxury-goldDark dark:text-luxury-gold/60 mr-1.5" />
+                          <span>{room.guestsLayout === '3+1' ? '3 Guests + Roll-away Option' : 'Up to 3 Guests'}</span>
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-slate-100 dark:border-slate-850 flex items-center justify-between gap-3">
+                        <button
+                          onClick={() => setSelectedRoomShowcase(room)}
+                          className="text-[10px] font-bold text-slate-450 hover:text-luxury-gold transition-colors duration-200 cursor-pointer bg-transparent border-none focus:outline-none"
+                        >
+                          View Gallery & Details
+                        </button>
+                        <button
+                          onClick={() => setSelectedRoomShowcase(room)}
+                          className="btn-gold py-1.5 px-4 text-[10px] uppercase tracking-wider font-bold"
+                        >
+                          Explore Suite
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </>
+        )}
       </section>
 
       {/* 7. Hotel Facilities Section */}
@@ -531,55 +982,218 @@ const GuestPortal = () => {
             <p className="text-xs text-slate-400 max-w-md mx-auto">Providing gold-standard physical amenities for a restorative getaway experience.</p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-6">
-            {/* Wi-Fi */}
-            <div className="p-5 bg-white dark:bg-luxury-darkCard border border-slate-200/40 dark:border-slate-850 rounded-2xl text-center space-y-3 shadow-sm hover:-translate-y-1 duration-200 transition-transform">
-              <div className="p-3 bg-amber-500/10 border border-amber-500/25 rounded-full inline-flex">
-                <Wifi className="h-5 w-5 text-luxury-gold" />
+          {/* Quick-glance top features */}
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+            <div className="p-4 bg-white dark:bg-luxury-darkCard border border-slate-200/40 dark:border-slate-850 rounded-xl text-center space-y-2.5 shadow-sm">
+              <div className="p-2.5 bg-amber-500/10 border border-amber-500/25 rounded-full inline-flex">
+                <Wifi className="h-4.5 w-4.5 text-luxury-gold" />
               </div>
-              <h5 className="text-xs font-bold dark:text-white uppercase tracking-wider">Free Wi-Fi</h5>
+              <h5 className="text-[11px] font-bold dark:text-white uppercase tracking-wider">Free Wi-Fi</h5>
             </div>
-
-            {/* Restaurant */}
-            <div className="p-5 bg-white dark:bg-luxury-darkCard border border-slate-200/40 dark:border-slate-850 rounded-2xl text-center space-y-3 shadow-sm hover:-translate-y-1 duration-200 transition-transform">
-              <div className="p-3 bg-amber-500/10 border border-amber-500/25 rounded-full inline-flex">
-                <Utensils className="h-5 w-5 text-luxury-gold" />
+            <div className="p-4 bg-white dark:bg-luxury-darkCard border border-slate-200/40 dark:border-slate-850 rounded-xl text-center space-y-2.5 shadow-sm">
+              <div className="p-2.5 bg-amber-500/10 border border-amber-500/25 rounded-full inline-flex">
+                <Utensils className="h-4.5 w-4.5 text-luxury-gold" />
               </div>
-              <h5 className="text-xs font-bold dark:text-white uppercase tracking-wider">Fine Dining</h5>
+              <h5 className="text-[11px] font-bold dark:text-white uppercase tracking-wider">4 Restaurants</h5>
             </div>
-
-            {/* Swimming Pool */}
-            <div className="p-5 bg-white dark:bg-luxury-darkCard border border-slate-200/40 dark:border-slate-850 rounded-2xl text-center space-y-3 shadow-sm hover:-translate-y-1 duration-200 transition-transform">
-              <div className="p-3 bg-amber-500/10 border border-amber-500/25 rounded-full inline-flex">
-                <Waves className="h-5 w-5 text-luxury-gold" />
+            <div className="p-4 bg-white dark:bg-luxury-darkCard border border-slate-200/40 dark:border-slate-850 rounded-xl text-center space-y-2.5 shadow-sm">
+              <div className="p-2.5 bg-amber-500/10 border border-amber-500/25 rounded-full inline-flex">
+                <Waves className="h-4.5 w-4.5 text-luxury-gold" />
               </div>
-              <h5 className="text-xs font-bold dark:text-white uppercase tracking-wider">Outdoor Pool</h5>
+              <h5 className="text-[11px] font-bold dark:text-white uppercase tracking-wider">Outdoor Pool</h5>
             </div>
-
-            {/* Parking */}
-            <div className="p-5 bg-white dark:bg-luxury-darkCard border border-slate-200/40 dark:border-slate-850 rounded-2xl text-center space-y-3 shadow-sm hover:-translate-y-1 duration-200 transition-transform">
-              <div className="p-3 bg-amber-500/10 border border-amber-500/25 rounded-full inline-flex">
-                <Car className="h-5 w-5 text-luxury-gold" />
+            <div className="p-4 bg-white dark:bg-luxury-darkCard border border-slate-200/40 dark:border-slate-850 rounded-xl text-center space-y-2.5 shadow-sm">
+              <div className="p-2.5 bg-amber-500/10 border border-amber-500/25 rounded-full inline-flex">
+                <Car className="h-4.5 w-4.5 text-luxury-gold" />
               </div>
-              <h5 className="text-xs font-bold dark:text-white uppercase tracking-wider">Free Parking</h5>
+              <h5 className="text-[11px] font-bold dark:text-white uppercase tracking-wider">Free Parking</h5>
             </div>
-
-            {/* Gym */}
-            <div className="p-5 bg-white dark:bg-luxury-darkCard border border-slate-200/40 dark:border-slate-850 rounded-2xl text-center space-y-3 shadow-sm hover:-translate-y-1 duration-200 transition-transform">
-              <div className="p-3 bg-amber-500/10 border border-amber-500/25 rounded-full inline-flex">
-                <Dumbbell className="h-5 w-5 text-luxury-gold" />
+            <div className="p-4 bg-white dark:bg-luxury-darkCard border border-slate-200/40 dark:border-slate-850 rounded-xl text-center space-y-2.5 shadow-sm">
+              <div className="p-2.5 bg-amber-500/10 border border-amber-500/25 rounded-full inline-flex">
+                <Dumbbell className="h-4.5 w-4.5 text-luxury-gold" />
               </div>
-              <h5 className="text-xs font-bold dark:text-white uppercase tracking-wider">Fitness Center</h5>
+              <h5 className="text-[11px] font-bold dark:text-white uppercase tracking-wider">Fitness Center</h5>
             </div>
-
-            {/* Room Service */}
-            <div className="p-5 bg-white dark:bg-luxury-darkCard border border-slate-200/40 dark:border-slate-850 rounded-2xl text-center space-y-3 shadow-sm hover:-translate-y-1 duration-200 transition-transform">
-              <div className="p-3 bg-amber-500/10 border border-amber-500/25 rounded-full inline-flex">
-                <ConciergeBell className="h-5 w-5 text-luxury-gold" />
+            <div className="p-4 bg-white dark:bg-luxury-darkCard border border-slate-200/40 dark:border-slate-850 rounded-xl text-center space-y-2.5 shadow-sm">
+              <div className="p-2.5 bg-amber-500/10 border border-amber-500/25 rounded-full inline-flex">
+                <ConciergeBell className="h-4.5 w-4.5 text-luxury-gold" />
               </div>
-              <h5 className="text-xs font-bold dark:text-white uppercase tracking-wider">Room Service</h5>
+              <h5 className="text-[11px] font-bold dark:text-white uppercase tracking-wider">Room Service</h5>
             </div>
           </div>
+
+          {/* Detailed categorized view */}
+          <div className="bg-white dark:bg-luxury-darkCard border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-6 md:p-8 shadow-md">
+            {/* Tabs Selector */}
+            <div className="flex flex-wrap border-b border-slate-100 dark:border-slate-850 gap-2 pb-4">
+              {facilityCategories.map((cat) => {
+                const CatIcon = cat.icon;
+                const isActive = activeFacilityCategory === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => setActiveFacilityCategory(cat.id)}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                      isActive 
+                        ? 'bg-luxury-navy dark:bg-luxury-gold text-white dark:text-luxury-navy shadow-sm'
+                        : 'text-slate-400 dark:text-slate-500 hover:text-luxury-gold dark:hover:text-luxury-gold'
+                    }`}
+                  >
+                    <CatIcon className="h-4 w-4" />
+                    <span>{cat.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Tab Content */}
+            <div className="pt-6">
+              {facilityCategories.map((cat) => {
+                if (cat.id !== activeFacilityCategory) return null;
+                return (
+                  <div key={cat.id} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 animate-fade-in">
+                    {cat.items.map((item, index) => (
+                      <div 
+                        key={index}
+                        className="flex items-center justify-between p-3 bg-slate-50 dark:bg-luxury-dark/40 border border-slate-100 dark:border-slate-850 rounded-xl hover:border-luxury-gold/30 dark:hover:border-luxury-gold/30 transition-colors duration-150"
+                      >
+                        <div className="flex items-center space-x-2.5 min-w-0">
+                          <CheckCircle2 className="h-4 w-4 text-luxury-gold flex-shrink-0" />
+                          <span className="text-xs text-slate-700 dark:text-slate-300 font-medium truncate">{item.name}</span>
+                        </div>
+                        {item.badge && (
+                          <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full flex-shrink-0 border ml-2 ${
+                            item.badge === 'Free'
+                              ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                              : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                          }`}>
+                            {item.badge}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 7.5. House Rules Section */}
+      <section id="rules-section" className="py-20 px-8 sm:px-16 max-w-6xl mx-auto space-y-12">
+        <div className="text-center space-y-3">
+          <span className="text-xs uppercase tracking-widest text-luxury-goldDark dark:text-luxury-gold font-bold font-mono">Resort Policies</span>
+          <h3 className="text-3xl md:text-4xl font-serif font-bold dark:text-white">House Rules</h3>
+          <p className="text-xs text-slate-450 max-w-md mx-auto">The Grand Royal takes special requests – add them in the next step of your booking!</p>
+        </div>
+
+        <div className="bg-white dark:bg-luxury-darkCard border border-slate-200/60 dark:border-slate-800/80 rounded-3xl p-6 md:p-10 shadow-md divide-y divide-slate-100 dark:divide-slate-850 animate-fade-in">
+          
+          {/* Row 1: Check-in / Check-out */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 py-6 first:pt-0">
+            <div className="md:col-span-3 flex items-center space-x-2">
+              <Clock className="h-4.5 w-4.5 text-luxury-gold" />
+              <span className="text-xs font-bold uppercase tracking-wider dark:text-white">Check-in & Check-out</span>
+            </div>
+            <div className="md:col-span-9 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div>
+                <span className="font-semibold block dark:text-slate-200">Check-in:  Any Time</span>
+                <span className="text-slate-400 mt-1 block leading-relaxed">Guests are required to show a photo identification and credit card upon check-in.</span>
+              </div>
+              <div>
+                <span className="font-semibold block dark:text-slate-200">Check-out: Any Time</span>
+                <span className="text-slate-400 mt-1 block leading-relaxed">Smooth checkout. Special requests can be entered during booking.</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Row 2: Cancellation & Prepayment */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 py-6">
+            <div className="md:col-span-3 flex items-center space-x-2">
+              <Calendar className="h-4.5 w-4.5 text-luxury-gold" />
+              <span className="text-xs font-bold uppercase tracking-wider dark:text-white">Cancellation</span>
+            </div>
+            <div className="md:col-span-9 text-xs text-slate-400 leading-relaxed">
+              <span className="font-semibold block dark:text-slate-200">Cancellation & Prepayment Policies</span>
+              <p className="mt-1">
+                Cancellation and prepayment policies vary according to accommodation type. Enter your stay dates and check the conditions of your selected option.
+              </p>
+            </div>
+          </div>
+
+          {/* Row 3: Children & Extra Beds */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 py-6">
+            <div className="md:col-span-3 flex items-center space-x-2">
+              <Users className="h-4.5 w-4.5 text-luxury-gold" />
+              <span className="text-xs font-bold uppercase tracking-wider dark:text-white">Children & Beds</span>
+            </div>
+            <div className="md:col-span-9 space-y-4 text-xs">
+              <div>
+                <span className="font-semibold block dark:text-slate-250 text-luxury-goldDark dark:text-luxury-gold">Child Policies</span>
+                <p className="text-slate-400 mt-1 leading-relaxed">
+                  Children of all ages are welcome. Children 18 and above will be charged as adults at this property.
+                  To see correct prices and occupancy info, please add the number and ages of children in your group to your search.
+                </p>
+              </div>
+              <div className="bg-slate-50 dark:bg-luxury-dark/40 border border-slate-100 dark:border-slate-850 p-4 rounded-xl space-y-3">
+                <span className="font-semibold block dark:text-slate-200 font-serif">Crib & Extra Bed Policies</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <span className="font-medium text-[9px] uppercase tracking-widest text-slate-400 block font-mono">0 - 2 Years</span>
+                    <span className="block dark:text-slate-300">• Extra bed upon request: <strong className="text-luxury-goldDark">₹ 2,160</strong> per child, per night</span>
+                    <span className="block dark:text-slate-300">• Crib upon request: <strong className="text-emerald-500 font-bold">Free</strong></span>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="font-medium text-[9px] uppercase tracking-widest text-slate-400 block font-mono">3+ Years</span>
+                    <span className="block dark:text-slate-300">• Extra bed upon request: <strong className="text-luxury-goldDark">₹ 2,160</strong> per person, per night</span>
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-400 border-t border-slate-200/50 dark:border-slate-800/50 pt-2 leading-relaxed">
+                  * Prices for cribs and extra beds aren\'t included in the total price. They\'ll have to be paid for separately during your stay. The number of extra beds and cribs allowed depends on the option you choose. Check your selected option for more info. All cribs and extra beds are subject to availability.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Row 4: Age Restriction */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 py-6">
+            <div className="md:col-span-3 flex items-center space-x-2">
+              <Shield className="h-4.5 w-4.5 text-luxury-gold" />
+              <span className="text-xs font-bold uppercase tracking-wider dark:text-white">Age Restrictions</span>
+            </div>
+            <div className="md:col-span-9 text-xs text-slate-400">
+              <span className="font-semibold block dark:text-slate-200">No Age Restriction</span>
+              <p className="mt-1">There is no age requirement for check-in.</p>
+            </div>
+          </div>
+
+          {/* Row 5: Pets */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 py-6">
+            <div className="md:col-span-3 flex items-center space-x-2">
+              <X className="h-4.5 w-4.5 text-red-500" />
+              <span className="text-xs font-bold uppercase tracking-wider dark:text-white">Pets Policy</span>
+            </div>
+            <div className="md:col-span-9 text-xs text-slate-400">
+              <span className="font-semibold text-red-500 block">Pets are not allowed</span>
+              <p className="mt-1">Pets are strictly prohibited inside the hotel premises.</p>
+            </div>
+          </div>
+
+          {/* Row 6: Groups */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 py-6 last:pb-0">
+            <div className="md:col-span-3 flex items-center space-x-2">
+              <Hotel className="h-4.5 w-4.5 text-luxury-gold" />
+              <span className="text-xs font-bold uppercase tracking-wider dark:text-white">Groups Booking</span>
+            </div>
+            <div className="md:col-span-9 text-xs text-slate-400 leading-relaxed">
+              <span className="font-semibold block dark:text-slate-200">Group Reservation Policies</span>
+              <p className="mt-1">
+                When booking more than 9 rooms, different policies and additional supplements may apply.
+              </p>
+            </div>
+          </div>
+
         </div>
       </section>
 
@@ -851,11 +1465,11 @@ const GuestPortal = () => {
                 </div>
                 <h4 className="font-serif text-lg font-bold dark:text-white">Reservation Confirmed!</h4>
                 <p className="text-xs text-slate-400">
-                  Your stay has been recorded in our ledger. Thank you for choosing The Grand Royal.
+                  Your stay has been recorded in our ledger. Thank you for choosing " MIAMI RESORT ".
                 </p>
               </div>
-            ) : (
-              <form onSubmit={handleCreateBooking} className="p-6 space-y-4">
+            ) : bookingStep === 'details' ? (
+              <form onSubmit={handleValidateDetails} className="p-6 space-y-4">
                 {errorMsg && (
                   <div className="p-3 bg-red-950/20 border border-red-500/20 text-red-400 rounded-lg text-xs">
                     {errorMsg}
@@ -887,9 +1501,23 @@ const GuestPortal = () => {
                       />
                     </div>
 
+                    {/* Check In Time */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Check In Time</label>
+                      <input
+                        type="time"
+                        required
+                        value={checkInTime}
+                        onChange={(e) => setCheckInTime(e.target.value)}
+                        className="w-full bg-white dark:bg-luxury-dark border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
                     {/* Check Out Date */}
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Check Out Date</label>
+                      <label className="text-[10px] font-bold text-slate-550 uppercase tracking-wider block">Check Out Date</label>
                       <input
                         type="date"
                         required
@@ -898,10 +1526,23 @@ const GuestPortal = () => {
                         className="w-full bg-white dark:bg-luxury-dark border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none"
                       />
                     </div>
-                  </div>
 
-                  {/* Guests Count */}
-                  <div className="space-y-1">
+                    {/* Check Out Time */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Check Out Time</label>
+                      <input
+                        type="time"
+                        required
+                        value={checkOutTime}
+                        onChange={(e) => setCheckOutTime(e.target.value)}
+                        className="w-full bg-white dark:bg-luxury-dark border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Guests Count */}
+                <div className="space-y-1">
                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Guests Count</label>
                     <input
                       type="number"
@@ -913,7 +1554,7 @@ const GuestPortal = () => {
                       className="w-full bg-white dark:bg-luxury-dark border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none"
                     />
                   </div>
-                </div>
+        
 
                 {/* Modal Actions */}
                 <div className="flex justify-end space-x-2 pt-4 border-t border-slate-200 dark:border-slate-800">
@@ -926,10 +1567,175 @@ const GuestPortal = () => {
                   </button>
                   <button
                     type="submit"
+                    className="btn-gold text-xs cursor-pointer"
+                  >
+                    Continue to Payment
+                  </button>
+                </div>
+              </form>
+            ) : bookingStep === 'payment' ? (
+              <div className="p-6 space-y-6">
+                {/* PayPal Styled Header */}
+                <div className="bg-[#003087] rounded-xl p-4 text-white flex flex-col items-center shadow-md animate-fade-in">
+                  <div className="flex items-center space-x-1">
+                    <span className="text-xl font-bold italic text-white font-sans">Pay</span>
+                    <span className="text-xl font-bold italic text-[#009cde] font-sans">Pal</span>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-350 ml-1">Checkout</span>
+                  </div>
+                  <span className="text-[9px] uppercase tracking-widest text-slate-300 mt-1">GUEST RESERVATION PORTAL</span>
+                </div>
+
+                {/* Booking Summary */}
+                <div className="bg-slate-50 dark:bg-luxury-dark/30 border border-slate-200 dark:border-slate-850 p-4 rounded-xl space-y-2 text-xs animate-fade-in">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Accommodation:</span>
+                    <span className="font-bold dark:text-white">{roomType}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Stay Duration:</span>
+                    <span className="font-semibold dark:text-slate-300">
+                      {checkIn} ({checkInTime}) to {checkOut} ({checkOutTime})
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Total Price:</span>
+                    <span className="font-extrabold text-luxury-gold text-sm">₹ {calculateTotalCost().toLocaleString()}</span>
+                  </div>
+                </div>
+
+                {/* Payment Options */}
+                <div className="space-y-3 animate-fade-in">
+                  {/* Pay Upon Arrival Option */}
+                  <button
+                    onClick={() => handleCompleteBooking('arrival')}
+                    disabled={loading}
+                    className="w-full bg-white hover:bg-slate-50 text-luxury-navy border border-[#003087] font-bold py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-all duration-150 cursor-pointer shadow-sm disabled:opacity-50"
+                  >
+                    <Hotel className="h-4.5 w-4.5 text-[#003087]" />
+                    <span>Pay Upon Arrival</span>
+                  </button>
+
+                  {/* Pay with PayPal Option */}
+                  <button
+                    onClick={() => setBookingStep('card_details')}
+                    disabled={loading}
+                    className="w-full bg-[#ffc439] hover:bg-[#f2b226] text-luxury-navy font-bold py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-all duration-150 cursor-pointer shadow-sm disabled:opacity-50"
+                  >
+                    <span className="italic font-bold text-luxury-navy">PayPal</span>
+                    <span className="text-xs font-semibold">Express Checkout</span>
+                  </button>
+
+                  {/* Pay with Card Option */}
+                  <button
+                    onClick={() => setBookingStep('card_details')}
+                    disabled={loading}
+                    className="w-full bg-[#0079c1] hover:bg-[#0068a6] text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-all duration-150 cursor-pointer shadow-sm disabled:opacity-50"
+                  >
+                    <span className="text-xs font-semibold">Pay with Credit/Debit Card</span>
+                  </button>
+                </div>
+
+                {/* Back button */}
+                <button
+                  onClick={() => setBookingStep('details')}
+                  disabled={loading}
+                  className="w-full text-center text-xs text-slate-400 hover:text-slate-200 transition-colors py-2 cursor-pointer font-medium"
+                >
+                  Back to Stay Details
+                </button>
+              </div>
+            ) : (
+              /* bookingStep === 'card_details' */
+              <form onSubmit={(e) => handleCompleteBooking('card', e)} className="p-6 space-y-4 animate-fade-in">
+                <div className="text-center pb-2 border-b border-slate-200 dark:border-slate-850">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block font-mono">Secure Payment Gateway</span>
+                  <span className="text-[10px] text-slate-500 mt-0.5 block">Total: ₹ {calculateTotalCost().toLocaleString()}</span>
+                </div>
+
+                {errorMsg && (
+                  <div className="p-3 bg-red-950/20 border border-red-500/20 text-red-400 rounded-lg text-xs">
+                    {errorMsg}
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  {/* Cardholder Name */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Cardholder Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={cardholderName}
+                      onChange={(e) => setCardholderName(e.target.value)}
+                      placeholder="John Doe"
+                      className="w-full bg-white dark:bg-luxury-dark border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-850 dark:text-white focus:outline-none"
+                    />
+                  </div>
+
+                  {/* Card Number */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Card Number</label>
+                    <input
+                      type="text"
+                      required
+                      pattern="[0-9\s]{13,19}"
+                      maxLength="19"
+                      value={cardNumber}
+                      onChange={(e) => setCardNumber(e.target.value)}
+                      placeholder="•••• •••• •••• ••••"
+                      className="w-full bg-white dark:bg-luxury-dark border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-850 dark:text-white focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Expiry Date */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Expiry Date</label>
+                      <input
+                        type="text"
+                        required
+                        pattern="(0[1-9]|1[0-2])\/[0-9]{2}"
+                        maxLength="5"
+                        placeholder="MM/YY"
+                        value={cardExpiry}
+                        onChange={(e) => setCardExpiry(e.target.value)}
+                        className="w-full bg-white dark:bg-luxury-dark border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-850 dark:text-white focus:outline-none"
+                      />
+                    </div>
+
+                    {/* CVV */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">CVV</label>
+                      <input
+                        type="password"
+                        required
+                        pattern="[0-9]{3,4}"
+                        maxLength="4"
+                        placeholder="•••"
+                        value={cardCvv}
+                        onChange={(e) => setCardCvv(e.target.value)}
+                        className="w-full bg-white dark:bg-luxury-dark border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-850 dark:text-white focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex justify-end space-x-2 pt-4 border-t border-slate-200 dark:border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setBookingStep('payment')}
+                    disabled={loading}
+                    className="px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="submit"
                     disabled={loading}
                     className="btn-gold text-xs cursor-pointer"
                   >
-                    {loading ? 'Securing Room...' : 'Confirm Stay'}
+                    {loading ? 'Processing Payment...' : 'Confirm Stay & Pay'}
                   </button>
                 </div>
               </form>

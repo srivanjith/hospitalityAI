@@ -1,4 +1,5 @@
-const mongoose = require('mongoose');
+const { Sequelize, DataTypes, Op } = require('sequelize');
+const mysql = require('mysql2/promise');
 const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
@@ -6,14 +7,14 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const DB_DIR = path.join(__dirname, '..', 'data', 'db');
-let useMongo = false;
+let useMySQL = false;
+let sequelize;
 
-// Ensure DB directory exists for JSON fallback
 if (!fs.existsSync(DB_DIR)) {
   fs.mkdirSync(DB_DIR, { recursive: true });
 }
 
-// JSON Database Helper
+// JSON Database Helper (Fallback)
 const jsonDb = {
   getFilePath(collection) {
     return path.join(DB_DIR, `${collection}.json`);
@@ -46,11 +47,9 @@ const jsonDb = {
   match(item, query) {
     if (!query) return true;
     for (const key in query) {
-      // Basic query matching
       let val = query[key];
       let itemVal = item[key];
       
-      // Handle MongoDB-like operator support
       if (val && typeof val === 'object' && !Array.isArray(val)) {
         if ('$gte' in val && !(itemVal >= val.$gte)) return false;
         if ('$lte' in val && !(itemVal <= val.$lte)) return false;
@@ -65,143 +64,223 @@ const jsonDb = {
   }
 };
 
-// Mongoose Schemas (used if MongoDB is active)
-const Schemas = {
-  users: new mongoose.Schema({
-    name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    role: { type: String, enum: ['admin', 'manager', 'guest'], default: 'manager' }
-  }, { timestamps: true }),
-
-  hotels: new mongoose.Schema({
-    name: { type: String, required: true },
-    location: { type: String, required: true },
-    totalRooms: { type: Number, required: true }
-  }, { timestamps: true }),
-
-  bookings: new mongoose.Schema({
-    hotelId: { type: String, required: true },
-    guestName: { type: String, required: true },
-    roomType: { type: String, required: true },
-    checkIn: { type: Date, required: true },
-    checkOut: { type: Date, required: true },
-    guestsCount: { type: Number, required: true },
-    status: { type: String, enum: ['booked', 'checked-in', 'checked-out', 'cancelled'], default: 'booked' },
-    revenue: { type: Number, default: 0 }
-  }, { timestamps: true }),
-
-  occupancyHistory: new mongoose.Schema({
-    date: { type: String, required: true }, // YYYY-MM-DD
-    occupancyPercentage: { type: Number, required: true },
-    guestCount: { type: Number, required: true },
-    roomsOccupied: { type: Number, required: true },
-    revenue: { type: Number, default: 0 }
-  }, { timestamps: true }),
-
-  employees: new mongoose.Schema({
-    name: { type: String, required: true },
-    email: { type: String, required: true },
-    department: { type: String, required: true }, // Front Desk, Housekeeping, Restaurant Services, Security, Maintenance
-    shift: { type: String, required: true }, // Morning, Evening, Night
-    salary: { type: Number, required: true },
-    attendance: [{ date: String, status: String }], // status: present, absent, leave
-    performance: { type: Number, default: 5.0 }, // Rating 1 to 5
-    status: { type: String, enum: ['active', 'inactive'], default: 'active' }
-  }, { timestamps: true }),
-
-  recommendations: new mongoose.Schema({
-    date: { type: String, required: true }, // YYYY-MM-DD
-    predictedOccupancy: { type: Number, required: true },
-    predictedGuests: { type: Number, required: true },
-    recommendedStaff: {
-      'Front Desk': Number,
-      'Housekeeping': Number,
-      'Restaurant Services': Number,
-      'Security': Number,
-      'Maintenance': Number
-    },
-    actualStaffScheduled: {
-      'Front Desk': Number,
-      'Housekeeping': Number,
-      'Restaurant Services': Number,
-      'Security': Number,
-      'Maintenance': Number
-    },
-    optimized: { type: Boolean, default: false },
-    insights: [String]
-  }, { timestamps: true }),
-
-  notifications: new mongoose.Schema({
-    type: { type: String, required: true },
-    title: { type: String, required: true },
-    message: { type: String, required: true },
-    date: { type: String, required: true },
-    read: { type: Boolean, default: false }
-  }, { timestamps: true }),
-
-  staffReports: new mongoose.Schema({
-    guestName: { type: String, required: true },
-    roomNo: { type: String, required: true },
-    staffName: { type: String, required: true },
-    service: { type: String, required: true }
-  }, { timestamps: true })
-};
-
 const Models = {};
 
+// Helper to map MongoDB operators to Sequelize operators
+function translateQuery(query) {
+  if (!query) return {};
+  const where = {};
+  for (const key in query) {
+    let targetKey = key;
+    if (key === '_id') {
+      targetKey = 'id';
+    }
+    const val = query[key];
+    if (val && typeof val === 'object' && !Array.isArray(val)) {
+      const fieldOperators = {};
+      for (const op in val) {
+        if (op === '$gte') fieldOperators[Op.gte] = val[op];
+        else if (op === '$lte') fieldOperators[Op.lte] = val[op];
+        else if (op === '$gt') fieldOperators[Op.gt] = val[op];
+        else if (op === '$lt') fieldOperators[Op.lt] = val[op];
+        else if (op === '$in') fieldOperators[Op.in] = val[op];
+        else if (op === '$ne') fieldOperators[Op.ne] = val[op];
+        else fieldOperators[op] = val[op];
+      }
+      where[targetKey] = fieldOperators;
+    } else {
+      where[targetKey] = val;
+    }
+  }
+  return where;
+}
+
+// Helper to extract fields from Mongoose style updates
+function translateUpdate(update) {
+  if (!update) return {};
+  if (update.$set) {
+    return { ...update.$set };
+  }
+  return update;
+}
+
+// Format document output to ensure it matches mongo layout (having both id and _id)
+function formatDoc(doc) {
+  if (!doc) return null;
+  const plain = typeof doc.toJSON === 'function' ? doc.toJSON() : doc;
+  return {
+    ...plain,
+    id: plain.id,
+    _id: plain.id
+  };
+}
+
+const defineModels = () => {
+  Models.users = sequelize.define('users', {
+    id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+    name: { type: DataTypes.STRING, allowNull: false },
+    email: { type: DataTypes.STRING, allowNull: false, unique: true },
+    password: { type: DataTypes.STRING, allowNull: false },
+    role: { type: DataTypes.ENUM('admin', 'manager', 'guest'), defaultValue: 'manager' }
+  });
+
+  Models.hotels = sequelize.define('hotels', {
+    id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+    name: { type: DataTypes.STRING, allowNull: false },
+    location: { type: DataTypes.STRING, allowNull: false },
+    totalRooms: { type: DataTypes.INTEGER, allowNull: false }
+  });
+
+  Models.bookings = sequelize.define('bookings', {
+    id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+    hotelId: { type: DataTypes.STRING, allowNull: false },
+    guestName: { type: DataTypes.STRING, allowNull: false },
+    roomType: { type: DataTypes.STRING, allowNull: false },
+    checkIn: { type: DataTypes.DATE, allowNull: false },
+    checkOut: { type: DataTypes.DATE, allowNull: false },
+    checkInTime: { type: DataTypes.STRING, defaultValue: '14:00' },
+    checkOutTime: { type: DataTypes.STRING, defaultValue: '12:00' },
+    guestsCount: { type: DataTypes.INTEGER, allowNull: false },
+    status: { type: DataTypes.ENUM('booked', 'checked-in', 'checked-out', 'cancelled'), defaultValue: 'booked' },
+    revenue: { type: DataTypes.FLOAT, defaultValue: 0 }
+  });
+
+  Models.occupancyHistory = sequelize.define('occupancyHistory', {
+    id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+    date: { type: DataTypes.STRING, allowNull: false },
+    occupancyPercentage: { type: DataTypes.FLOAT, allowNull: false },
+    guestCount: { type: DataTypes.INTEGER, allowNull: false },
+    roomsOccupied: { type: DataTypes.INTEGER, allowNull: false },
+    revenue: { type: DataTypes.FLOAT, defaultValue: 0 }
+  }, {
+    tableName: 'occupancyHistory'
+  });
+
+  Models.employees = sequelize.define('employees', {
+    id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+    name: { type: DataTypes.STRING, allowNull: false },
+    email: { type: DataTypes.STRING, allowNull: false },
+    department: { type: DataTypes.STRING, allowNull: false },
+    shift: { type: DataTypes.STRING, allowNull: false },
+    salary: { type: DataTypes.FLOAT, allowNull: false },
+    attendance: { type: DataTypes.JSON, defaultValue: [] },
+    performance: { type: DataTypes.FLOAT, defaultValue: 5.0 },
+    status: { type: DataTypes.STRING, defaultValue: 'active' }
+  });
+
+  Models.recommendations = sequelize.define('recommendations', {
+    id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+    date: { type: DataTypes.STRING, allowNull: false },
+    predictedOccupancy: { type: DataTypes.FLOAT, allowNull: false },
+    predictedGuests: { type: DataTypes.FLOAT, allowNull: false },
+    recommendedStaff: { type: DataTypes.JSON },
+    actualStaffScheduled: { type: DataTypes.JSON },
+    optimized: { type: DataTypes.BOOLEAN, defaultValue: false },
+    insights: { type: DataTypes.JSON }
+  });
+
+  Models.notifications = sequelize.define('notifications', {
+    id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+    type: { type: DataTypes.STRING, allowNull: false },
+    title: { type: DataTypes.STRING, allowNull: false },
+    message: { type: DataTypes.STRING, allowNull: false },
+    date: { type: DataTypes.STRING, allowNull: false },
+    read: { type: DataTypes.BOOLEAN, defaultValue: false }
+  });
+
+  Models.staffReports = sequelize.define('staffReports', {
+    id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+    guestName: { type: DataTypes.STRING, allowNull: false },
+    roomNo: { type: DataTypes.STRING, allowNull: false },
+    staffName: { type: DataTypes.STRING, allowNull: false },
+    service: { type: DataTypes.STRING, allowNull: false }
+  }, {
+    tableName: 'staffReports'
+  });
+};
+
 const connectDB = async () => {
-  const mongoUri = process.env.MONGO_URI;
-  if (!mongoUri) {
-    console.log('⚠️ MONGO_URI not found in env. Falling back to local JSON database.');
-    useMongo = false;
+  const mysqlUri = process.env.MYSQL_URI;
+  const mysqlHost = process.env.MYSQL_HOST;
+  
+  if (!mysqlUri && !mysqlHost) {
+    console.log('⚠️ MySQL configuration not found in env. Falling back to local JSON database.');
+    useMySQL = false;
     return;
   }
 
   try {
-    mongoose.set('strictQuery', false);
-    // Connect with a 3 second timeout so it falls back quickly if MongoDB is offline
-    await mongoose.connect(mongoUri, {
-      serverSelectionTimeoutMS: 3000
-    });
-    console.log('✅ MongoDB Connected successfully!');
-    useMongo = true;
+    const dbName = process.env.MYSQL_DATABASE || 'hospitalityAI';
 
-    // Initialize Mongoose Models
-    for (const key in Schemas) {
-      Models[key] = mongoose.models[key] || mongoose.model(key, Schemas[key]);
+    // Programmatically create/verify the database if connecting using separate config
+    if (!mysqlUri) {
+      const connection = await mysql.createConnection({
+        host: mysqlHost,
+        port: process.env.MYSQL_PORT || 3306,
+        user: process.env.MYSQL_USER || 'root',
+        password: process.env.MYSQL_PASSWORD || '',
+        connectTimeout: 3000
+      });
+      await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\`;`);
+      await connection.end();
+      console.log(`✅ Database "${dbName}" created or verified.`);
     }
+
+    if (mysqlUri) {
+      sequelize = new Sequelize(mysqlUri, {
+        logging: false,
+        dialectOptions: {
+          connectTimeout: 3000
+        }
+      });
+    } else {
+      sequelize = new Sequelize(
+        dbName,
+        process.env.MYSQL_USER || 'root',
+        process.env.MYSQL_PASSWORD || '',
+        {
+          host: mysqlHost,
+          dialect: 'mysql',
+          port: process.env.MYSQL_PORT || 3306,
+          logging: false,
+          dialectOptions: {
+            connectTimeout: 3000
+          }
+        }
+      );
+    }
+
+    await sequelize.authenticate();
+    console.log('✅ MySQL Connected successfully!');
+    useMySQL = true;
+
+    defineModels();
+    await sequelize.sync({ alter: true });
+    console.log('✅ MySQL Tables synced successfully!');
+
   } catch (err) {
-    console.log(`⚠️ MongoDB connection failed: ${err.message}. Falling back to local JSON database.`);
-    useMongo = false;
+    console.log(`⚠️ MySQL connection failed: ${err.message}. Falling back to local JSON database.`);
+    useMySQL = false;
+  }
+};
+
+const disconnectDB = async () => {
+  if (useMySQL && sequelize) {
+    await sequelize.close();
+    console.log('🔌 Closed MySQL connection.');
   }
 };
 
 // Universal Repository Wrapper
 const db = {
-  isFallback: () => !useMongo,
+  isFallback: () => !useMySQL,
   collection(name) {
     return {
       async find(query = {}) {
-        if (useMongo) {
-          const mQuery = Models[name].find({});
-          // Basic support for query constraints
-          if (query) {
-            for (const key in query) {
-              const val = query[key];
-              if (val && typeof val === 'object' && !Array.isArray(val)) {
-                if ('$gte' in val) mQuery.where(key).gte(val.$gte);
-                if ('$lte' in val) mQuery.where(key).lte(val.$lte);
-                if ('$gt' in val) mQuery.where(key).gt(val.$gt);
-                if ('$lt' in val) mQuery.where(key).lt(val.$lt);
-                if ('$in' in val) mQuery.where(key).in(val.$in);
-              } else {
-                mQuery.where(key).equals(val);
-              }
-            }
-          }
-          const results = await mQuery.lean();
-          return results.map(doc => ({ ...doc, id: doc._id.toString() }));
+        if (useMySQL) {
+          const where = translateQuery(query);
+          const results = await Models[name].findAll({ where });
+          return results.map(doc => formatDoc(doc));
         } else {
           const items = jsonDb.read(name);
           return items.filter(item => jsonDb.match(item, query));
@@ -209,9 +288,10 @@ const db = {
       },
 
       async findOne(query = {}) {
-        if (useMongo) {
-          const doc = await Models[name].findOne(query).lean();
-          return doc ? { ...doc, id: doc._id.toString() } : null;
+        if (useMySQL) {
+          const where = translateQuery(query);
+          const doc = await Models[name].findOne({ where });
+          return formatDoc(doc);
         } else {
           const items = jsonDb.read(name);
           const found = items.find(item => jsonDb.match(item, query));
@@ -220,9 +300,9 @@ const db = {
       },
 
       async findById(id) {
-        if (useMongo) {
-          const doc = await Models[name].findById(id).lean();
-          return doc ? { ...doc, id: doc._id.toString() } : null;
+        if (useMySQL) {
+          const doc = await Models[name].findByPk(id);
+          return formatDoc(doc);
         } else {
           const items = jsonDb.read(name);
           const found = items.find(item => item._id === id || item.id === id);
@@ -231,11 +311,11 @@ const db = {
       },
 
       async create(doc) {
-        if (useMongo) {
-          const mDoc = new Models[name](doc);
-          const saved = await mDoc.save();
-          const lean = saved.toObject();
-          return { ...lean, id: lean._id.toString() };
+        if (useMySQL) {
+          const payload = { ...doc };
+          if (payload._id && !payload.id) payload.id = payload._id;
+          const created = await Models[name].create(payload);
+          return formatDoc(created);
         } else {
           const items = jsonDb.read(name);
           const newDoc = {
@@ -252,12 +332,14 @@ const db = {
       },
 
       async insertMany(docs) {
-        if (useMongo) {
-          const saved = await Models[name].insertMany(docs);
-          return saved.map(s => {
-            const lean = s.toObject();
-            return { ...lean, id: lean._id.toString() };
+        if (useMySQL) {
+          const payloads = docs.map(doc => {
+            const payload = { ...doc };
+            if (payload._id && !payload.id) payload.id = payload._id;
+            return payload;
           });
+          const created = await Models[name].bulkCreate(payloads);
+          return created.map(doc => formatDoc(doc));
         } else {
           const items = jsonDb.read(name);
           const newDocs = docs.map(doc => ({
@@ -274,15 +356,19 @@ const db = {
       },
 
       async updateOne(query, update) {
-        if (useMongo) {
-          const res = await Models[name].updateOne(query, update);
-          return { matchedCount: res.matchedCount, modifiedCount: res.modifiedCount };
+        if (useMySQL) {
+          const where = translateQuery(query);
+          const values = translateUpdate(update);
+          const [affectedCount] = await Models[name].update(values, {
+            where,
+            limit: 1
+          });
+          return { matchedCount: affectedCount, modifiedCount: affectedCount };
         } else {
           const items = jsonDb.read(name);
           const idx = items.findIndex(item => jsonDb.match(item, query));
           if (idx !== -1) {
             const current = items[idx];
-            // Basic support for $set update operator
             let updated = { ...current };
             if (update.$set) {
               updated = { ...updated, ...update.$set };
@@ -299,9 +385,11 @@ const db = {
       },
 
       async updateMany(query, update) {
-        if (useMongo) {
-          const res = await Models[name].updateMany(query, update);
-          return { matchedCount: res.matchedCount, modifiedCount: res.modifiedCount };
+        if (useMySQL) {
+          const where = translateQuery(query);
+          const values = translateUpdate(update);
+          const [affectedCount] = await Models[name].update(values, { where });
+          return { matchedCount: affectedCount, modifiedCount: affectedCount };
         } else {
           const items = jsonDb.read(name);
           let modifiedCount = 0;
@@ -327,9 +415,14 @@ const db = {
       },
 
       async findByIdAndUpdate(id, update, options = {}) {
-        if (useMongo) {
-          const doc = await Models[name].findByIdAndUpdate(id, update, { new: true }).lean();
-          return doc ? { ...doc, id: doc._id.toString() } : null;
+        if (useMySQL) {
+          const values = translateUpdate(update);
+          const instance = await Models[name].findByPk(id);
+          if (instance) {
+            await instance.update(values);
+            return formatDoc(instance);
+          }
+          return null;
         } else {
           const items = jsonDb.read(name);
           const idx = items.findIndex(item => item._id === id || item.id === id);
@@ -350,9 +443,10 @@ const db = {
       },
 
       async deleteOne(query) {
-        if (useMongo) {
-          const res = await Models[name].deleteOne(query);
-          return { deletedCount: res.deletedCount };
+        if (useMySQL) {
+          const where = translateQuery(query);
+          const deletedCount = await Models[name].destroy({ where, limit: 1 });
+          return { deletedCount };
         } else {
           const items = jsonDb.read(name);
           const idx = items.findIndex(item => jsonDb.match(item, query));
@@ -366,9 +460,10 @@ const db = {
       },
 
       async deleteMany(query = {}) {
-        if (useMongo) {
-          const res = await Models[name].deleteMany(query);
-          return { deletedCount: res.deletedCount };
+        if (useMySQL) {
+          const where = translateQuery(query);
+          const deletedCount = await Models[name].destroy({ where });
+          return { deletedCount };
         } else {
           const items = jsonDb.read(name);
           const initialCount = items.length;
@@ -379,8 +474,9 @@ const db = {
       },
 
       async countDocuments(query = {}) {
-        if (useMongo) {
-          return await Models[name].countDocuments(query);
+        if (useMySQL) {
+          const where = translateQuery(query);
+          return await Models[name].count({ where });
         } else {
           const items = jsonDb.read(name);
           return items.filter(item => jsonDb.match(item, query)).length;
@@ -390,4 +486,4 @@ const db = {
   }
 };
 
-module.exports = { connectDB, db };
+module.exports = { connectDB, disconnectDB, db };

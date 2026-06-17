@@ -99,8 +99,8 @@ export const sendBookingConfirmationEmail = async (email, booking, toName = 'Val
       `%c📅 HospitalityAI Sandbox Booking Confirmation sent to: ${email}\n` +
       `Guest Name: ${toName}\n` +
       `Room Type: ${booking.roomType}\n` +
-      `Check-in: ${booking.checkIn}\n` +
-      `Check-out: ${booking.checkOut}\n` +
+      `Check-in: ${booking.checkIn} at ${booking.checkInTime || '14:00'}\n` +
+      `Check-out: ${booking.checkOut} at ${booking.checkOutTime || '12:00'}\n` +
       `Guests: ${booking.guestsCount}\n` +
       `Total Cost: $${booking.revenue}`,
       'background: #0f172a; color: #10b981; font-size: 14px; font-weight: bold; padding: 10px; border: 1px solid #10b981; border-radius: 6px;'
@@ -122,7 +122,9 @@ export const sendBookingConfirmationEmail = async (email, booking, toName = 'Val
       to_name: toName,
       room_type: booking.roomType,
       check_in: booking.checkIn,
+      check_in_time: booking.checkInTime || '14:00',
       check_out: booking.checkOut,
+      check_out_time: booking.checkOutTime || '12:00',
       guests_count: booking.guestsCount,
       total_price: booking.revenue,
       app_name: 'HospitalityAI'
