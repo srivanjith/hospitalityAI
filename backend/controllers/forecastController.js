@@ -59,7 +59,7 @@ const getForecast = async (req, res) => {
 
   try {
     const hotels = await db.collection('hotels').find();
-    const totalRooms = hotels[0]?.totalRooms || 120;
+    const totalRooms = hotels[0]?.totalRooms || 500;
     
     // 1. Get raw forecasts from ML engine
     const rawForecasts = await mlService.getForecastRange(start, numDays, totalRooms);
@@ -73,15 +73,10 @@ const getForecast = async (req, res) => {
       if (f.date === todayStr) {
         const checkedInBookings = await db.collection('bookings').find({ status: 'checked-in' });
         let actualGuestsCount = 0;
-        const actualRoomsOccupied = checkedInBookings.filter(b => {
-          const checkInDate = b.checkIn instanceof Date ? b.checkIn.toISOString().split('T')[0] : (typeof b.checkIn === 'string' ? b.checkIn.split('T')[0] : '');
-          const checkOutDate = b.checkOut instanceof Date ? b.checkOut.toISOString().split('T')[0] : (typeof b.checkOut === 'string' ? b.checkOut.split('T')[0] : '');
-          const isActive = f.date >= checkInDate && f.date < checkOutDate;
-          if (isActive) {
-            actualGuestsCount += (b.guestsCount || 0);
-          }
-          return isActive;
-        }).length;
+        checkedInBookings.forEach(b => {
+          actualGuestsCount += (b.guestsCount || 0);
+        });
+        const actualRoomsOccupied = checkedInBookings.length;
         
         f.roomsOccupied = actualRoomsOccupied;
         f.predictedOccupancy = Math.round((actualRoomsOccupied / totalRooms) * 100);

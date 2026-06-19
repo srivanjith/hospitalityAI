@@ -31,6 +31,7 @@ export const sendOTPEmail = async (email, otpCode, toName = 'Valued Guest') => {
       `%c🔑 HospitalityAI Sandbox OTP Code: ${otpCode} `,
       'background: #0f172a; color: #d4af37; font-size: 16px; font-weight: bold; padding: 10px; border: 1px solid #d4af37; border-radius: 6px;'
     );
+    window.lastOtpCode = otpCode;
     
     // Simulate a brief network delay
     await new Promise((resolve) => setTimeout(resolve, 800));

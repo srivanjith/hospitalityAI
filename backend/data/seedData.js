@@ -55,8 +55,8 @@ const seed = async () => {
       console.log('🌱 Seeding resort metadata...');
       const hotel = await db.collection('hotels').create({
         name: 'The Grand Royal Resort',
-        location: 'Miami, FL',
-        totalRooms: 120
+        location: 'Sathy, Erode, Tamil Nadu',
+        totalRooms: 500
       });
       hotelId = hotel.id || hotel._id;
       console.log('✅ Hotels seeded!');
@@ -127,7 +127,7 @@ const seed = async () => {
     const histCount = await db.collection('occupancyHistory').countDocuments();
     if (histCount === 0) {
       console.log('🌱 Seeding 1.5 years (~500 days) of historical occupancy records...');
-      const totalRooms = 120;
+      const totalRooms = 500;
       const historyRecords = [];
       const today = new Date();
       

@@ -130,3 +130,11 @@
 .animation-delay-700 { animation-delay: 700ms; animation-fill-mode: both; }
 .animation-delay-900 { animation-delay: 900ms; animation-fill-mode: both; }
 
+/* Hide scrollbars utility */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

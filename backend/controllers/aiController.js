@@ -3,28 +3,71 @@ const groqService = require('../services/groqService');
 
 const fetchDataSnapshot = async () => {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const formatDateStr = (dateVal) => {
+      if (!dateVal) return '';
+      const d = new Date(dateVal);
+      if (isNaN(d.getTime())) return '';
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    };
 
+    const today = formatDateStr(new Date());
 
     const allHistory = await db.collection('occupancyHistory').find();
     const sorted = allHistory.sort((a, b) => new Date(a.date) - new Date(b.date));
     const last30 = sorted.slice(-30);
 
     const allBookings = await db.collection('bookings').find();
+    
+    // Check-ins today: check-in date is today
+    const checkInsToday = allBookings.filter(b => {
+      return formatDateStr(b.checkIn) === today;
+    });
+
+    // Check-outs today: check-out date is today
+    const checkOutsToday = allBookings.filter(b => {
+      return formatDateStr(b.checkOut) === today;
+    });
+
     const activeBookings = allBookings.filter(b => {
-      const checkIn = (b.checkIn || '').toString().split('T')[0];
-      const checkOut = (b.checkOut || '').toString().split('T')[0];
+      const checkIn = formatDateStr(b.checkIn);
+      const checkOut = formatDateStr(b.checkOut);
       return checkIn <= today && checkOut > today;
     });
 
     const totalRevenue = allBookings
-      .filter(b => (b.checkIn || '').toString().split('T')[0].startsWith(today.slice(0, 7)))
+      .filter(b => formatDateStr(b.checkIn).startsWith(today.slice(0, 7)))
       .reduce((sum, b) => sum + (b.revenue || 0), 0);
 
     const employees = await db.collection('employees').find({ status: 'active' });
     const byDept = {};
-    employees.forEach(e => {
+    
+    let presentCount = 0;
+    let absentCount = 0;
+    let leaveCount = 0;
+    let unmarkedCount = 0;
+
+    const employeeDetailsList = employees.map(e => {
       byDept[e.department] = (byDept[e.department] || 0) + 1;
+      
+      const att = (e.attendance || []).find(a => a.date === today);
+      const statusToday = att ? att.status : 'unmarked';
+      
+      if (statusToday === 'present') presentCount++;
+      else if (statusToday === 'absent') absentCount++;
+      else if (statusToday === 'leave') leaveCount++;
+      else unmarkedCount++;
+
+      return {
+        name: e.name,
+        department: e.department,
+        shift: e.shift,
+        monthlySalary: e.salary,
+        dailyCostToday: Math.round(e.salary / 30),
+        statusToday: statusToday
+      };
     });
 
     const recs = await db.collection('recommendations').find();
@@ -33,7 +76,7 @@ const fetchDataSnapshot = async () => {
     const notifications = await db.collection('notifications').find({ read: false });
 
     const hotels = await db.collection('hotels').find();
-    const totalRooms = hotels[0]?.totalRooms || 120;
+    const totalRooms = hotels[0]?.totalRooms || 500;
 
     return {
       today,
@@ -43,6 +86,30 @@ const fetchDataSnapshot = async () => {
       monthlyRevenueSoFar: totalRevenue,
       activeEmployeesByDepartment: byDept,
       totalActiveEmployees: employees.length,
+      todayStaffSummary: {
+        present: presentCount,
+        absent: absentCount,
+        leave: leaveCount,
+        unmarked: unmarkedCount,
+        total: employees.length
+      },
+      employeeList: employeeDetailsList,
+      checkInsTodayCount: checkInsToday.length,
+      checkOutsTodayCount: checkOutsToday.length,
+      checkInsTodayList: checkInsToday.map(b => ({
+        guestName: b.guestName,
+        roomType: b.roomType,
+        guestsCount: b.guestsCount,
+        status: b.status,
+        revenue: b.revenue
+      })),
+      checkOutsTodayList: checkOutsToday.map(b => ({
+        guestName: b.guestName,
+        roomType: b.roomType,
+        guestsCount: b.guestsCount,
+        status: b.status,
+        revenue: b.revenue
+      })),
       last30DaysOccupancyHistory: last30.map(h => ({
         date: h.date,
         occupancy: h.occupancyPercentage,
@@ -83,13 +150,25 @@ Here is the LIVE data snapshot from the hotel database as of ${snapshot.today}:
 
 HOTEL OVERVIEW:
 - Total rooms: ${snapshot.totalRooms}
-- Currently occupied rooms: ${snapshot.activeBookingsCount} (${snapshot.currentOccupancyPct}% occupancy)
+- Currently occupied rooms (rooms occupied today): ${snapshot.activeBookingsCount} (${snapshot.currentOccupancyPct}% occupancy)
 - Monthly revenue so far: ₹${(snapshot.monthlyRevenueSoFar || 0).toLocaleString()}
 - Unread alerts: ${snapshot.unreadNotifications}
 
-ACTIVE STAFF BY DEPARTMENT:
-${JSON.stringify(snapshot.activeEmployeesByDepartment, null, 2)}
-Total active employees: ${snapshot.totalActiveEmployees}
+DAILY CHECK-INS & CHECK-OUTS TODAY:
+- Number of check-ins registered today (check-in date is ${snapshot.today}): ${snapshot.checkInsTodayCount}
+- List of check-ins today: ${JSON.stringify(snapshot.checkInsTodayList, null, 2)}
+- Number of check-outs registered today (check-out date is ${snapshot.today}): ${snapshot.checkOutsTodayCount}
+- List of check-outs today: ${JSON.stringify(snapshot.checkOutsTodayList, null, 2)}
+
+STAFF ATTENDANCE TODAY:
+- Present today: ${snapshot.todayStaffSummary?.present || 0}
+- Absent today: ${snapshot.todayStaffSummary?.absent || 0}
+- Leave today: ${snapshot.todayStaffSummary?.leave || 0}
+- Unmarked/Not mentioned today: ${snapshot.todayStaffSummary?.unmarked || 0}
+- Total active staff: ${snapshot.todayStaffSummary?.total || 0}
+
+INDIVIDUAL EMPLOYEE DETAILS (Monthly Salary & Daily Cost Today & Today's Attendance Status):
+${JSON.stringify(snapshot.employeeList, null, 2)}
 
 LAST 30 DAYS OCCUPANCY HISTORY (most recent last):
 ${JSON.stringify(snapshot.last30DaysOccupancyHistory, null, 2)}
@@ -100,8 +179,12 @@ ${JSON.stringify(snapshot.upcomingForecasts, null, 2)}
 INSTRUCTIONS:
 - Answer the manager's question analytically using the above data
 - Be concise but insightful — use numbers, percentages, and trends from the data
-- If asked about staffing gaps, compare recommendedStaff vs actualStaffScheduled for each department
-- If asked about revenue or occupancy trends, calculate averages/changes from the history
+- If asked about "how many check in registered today" or "how many checkins today", look at the "DAILY CHECK-INS & CHECK-OUTS TODAY" section, and report: ${snapshot.checkInsTodayCount} check-ins, and list the guest names and details from checkInsTodayList if relevant.
+- If asked about check-outs today, report: ${snapshot.checkOutsTodayCount} check-outs, and list the guest names and details from checkOutsTodayList.
+- If the manager asks about the number of rooms occupied today, answer: ${snapshot.activeBookingsCount} occupied rooms.
+- If asked about staff present today, absent today, on leave today, or not mentioned (unmarked), give the exact counts from the "STAFF ATTENDANCE TODAY" section. You can list the names of employees in these categories if requested.
+- If asked about employee cost details or monthly salaries, refer to the "INDIVIDUAL EMPLOYEE DETAILS" section.
+- If asked about today's cost of a specific employee by name (e.g., "Elena Rostova's cost today" or similar), look up their name in the employee details list, report their "dailyCostToday" (which is calculated as monthlySalary / 30) and their "monthlySalary" for complete context.
 - Format your response cleanly (use bullet points or short paragraphs as appropriate)
 - If data is insufficient to answer, say so honestly
 - Never fabricate numbers not present in the data above`;
@@ -137,7 +220,7 @@ INSTRUCTIONS:
 //  Helper: Generate a batch of occupancy records via Groq
 // ─────────────────────────────────────────────────────────────
 const generateOccupancyBatch = async (startDate, endDate) => {
-  const prompt = `Generate realistic daily hotel occupancy history data for a 4-star hotel in India with 120 rooms.
+  const prompt = `Generate realistic daily hotel occupancy history data for a 4-star hotel in India with 500 rooms.
 Generate records for each day from ${startDate} to ${endDate}.
 Consider: Indian festivals (Diwali, Holi, Eid, Christmas), weekends having higher occupancy, summer season (Apr-Jun) being peak.
 Occupancy should vary between 25% and 98% depending on season/events.
@@ -145,8 +228,8 @@ Occupancy should vary between 25% and 98% depending on season/events.
 Return a JSON array where each element is an object with these fields:
 - date: "YYYY-MM-DD"
 - occupancyPercentage: number (25 to 98)
-- guestCount: number (roughly occupancyPercentage/100 * 120 * 1.7)
-- roomsOccupied: number (roughly occupancyPercentage/100 * 120)
+- guestCount: number (roughly occupancyPercentage/100 * 500 * 1.7)
+- roomsOccupied: number (roughly occupancyPercentage/100 * 500)
 - revenue: number in INR (roomsOccupied * a nightly rate between 3500 and 8500 depending on occupancy)
 
 Return ONLY the raw JSON array, no other text.`;
@@ -200,9 +283,9 @@ const seedData = async (req, res) => {
     let hotelId;
     if (!hotels.length) {
       const hotel = await db.collection('hotels').create({
-        name: 'The Grand Palace Hotel',
-        location: 'Mumbai, Maharashtra, India',
-        totalRooms: 120
+        name: 'The Grand Royal Resort',
+        location: 'Sathy, Erode, Tamil Nadu, India',
+        totalRooms: 500
       });
       hotelId = hotel.id || hotel._id;
     } else {

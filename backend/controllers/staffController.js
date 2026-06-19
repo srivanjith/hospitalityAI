@@ -192,6 +192,45 @@ const getStaffReports = async (req, res) => {
   }
 };
 
+
+const submitFeedback = async (req, res) => {
+  const { guestName, roomNo, category, rating, comments } = req.body;
+
+  try {
+    if (!guestName || !roomNo || !category || rating === undefined || !comments) {
+      return res.status(400).json({ message: 'Please provide all feedback details' });
+    }
+
+    const feedback = await db.collection('feedbacks').create({
+      guestName,
+      roomNo,
+      category,
+      rating: Number(rating),
+      comments,
+      createdAt: new Date().toISOString()
+    });
+
+    return res.status(201).json(feedback);
+  } catch (error) {
+    console.error('Submit Feedback Error:', error);
+    return res.status(500).json({ message: 'Server error saving guest feedback' });
+  }
+};
+
+// @desc    Get all guest feedback
+// @route   GET /api/feedback
+// @access  Private
+const getFeedbacks = async (req, res) => {
+  try {
+    const feedbacks = await db.collection('feedbacks').find();
+    const sorted = (feedbacks || []).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    return res.json(sorted);
+  } catch (error) {
+    console.error('Fetch Feedbacks Error:', error);
+    return res.status(500).json({ message: 'Server error fetching guest feedback' });
+  }
+};
+
 module.exports = {
   getEmployees,
   addEmployee,
@@ -200,5 +239,7 @@ module.exports = {
   updatePerformanceRating,
   deleteEmployee,
   submitStaffReport,
-  getStaffReports
+  getStaffReports,
+  submitFeedback,
+  getFeedbacks
 };

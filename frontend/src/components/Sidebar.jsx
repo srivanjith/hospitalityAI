@@ -7,8 +7,7 @@ import {
   FileSpreadsheet, 
   LogOut,
   UserCircle,
-  BadgeIndianRupee,
-  DatabaseZap
+  BadgeIndianRupee
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -21,8 +20,7 @@ const Sidebar = ({ currentPage, setCurrentPage }) => {
     { id: 'forecasting', name: 'AI Staffing Forecast', icon: BrainCircuit },
     { id: 'staff', name: 'Staff & Shift Registry', icon: Users },
     { id: 'costs', name: 'Work Details ', icon: BadgeIndianRupee },
-    { id: 'reports', name: 'Analytical Reports', icon: FileSpreadsheet },
-    ...(user?.role === 'admin' ? [{ id: 'seeder', name: 'AI Data Seeder', icon: DatabaseZap, adminOnly: true }] : [])
+    { id: 'reports', name: 'Analytical Reports', icon: FileSpreadsheet }
   ];
 
   return (

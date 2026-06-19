@@ -174,7 +174,8 @@ const StaffManagement = () => {
   }
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <>
+      <div className="space-y-8 animate-fade-in">
 
       {/* ── 0. Weekly Roster Calendar ─────────────────────────── */}
       <div className="glass-panel rounded-2xl shadow-glass overflow-hidden">
@@ -280,7 +281,7 @@ const StaffManagement = () => {
         {onLeaveToday.length === 0 ? (
           <div className="p-5 bg-emerald-500/5 border border-emerald-500/20 rounded-xl flex items-center space-x-3 text-sm text-emerald-600 dark:text-emerald-400">
             <CheckCircle2 className="h-5 w-5 flex-shrink-0" />
-            <span>No employees are on leave or absent on {attendanceDate}. Full workforce is available.</span>
+            <span>No employees are  absent on {attendanceDate}.</span>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -575,9 +576,10 @@ const StaffManagement = () => {
           </table>
         </div>
       </div>
+    </div>
 
-      {/* 3. Recruit Employee Modal */}
-      {showAddModal && (
+    {/* 3. Recruit Employee Modal */}
+    {showAddModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="w-full max-w-md bg-luxury-cream dark:bg-luxury-darkCard border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xl animate-fade-in">
             {/* Modal Header */}
@@ -696,7 +698,7 @@ const StaffManagement = () => {
           </div>
         </div>
       )}
-    </div>
+      </>
   );
 };
 

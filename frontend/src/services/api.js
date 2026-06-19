@@ -36,6 +36,33 @@ const api = {
     return handleResponse(res);
   },
 
+  async register(name, email, password, isGoogleLogin = false) {
+    const res = await fetch(`${BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password, isGoogleLogin })
+    });
+    return handleResponse(res);
+  },
+
+  async googleLogin(name, email) {
+    const res = await fetch(`${BASE_URL}/auth/google-login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email })
+    });
+    return handleResponse(res);
+  },
+
+  async checkEmail(email) {
+    const res = await fetch(`${BASE_URL}/auth/check-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    return handleResponse(res);
+  },
+
   async forgotPassword(email) {
     const res = await fetch(`${BASE_URL}/auth/forgot-password`, {
       method: 'POST',
@@ -165,6 +192,23 @@ const api = {
 
   async getStaffReports() {
     const res = await fetch(`${BASE_URL}/staff/reports`, {
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  // Feedback endpoints
+  async submitFeedback(feedbackData) {
+    const res = await fetch(`${BASE_URL}/feedback`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(feedbackData)
+    });
+    return handleResponse(res);
+  },
+
+  async getFeedbacks() {
+    const res = await fetch(`${BASE_URL}/feedback`, {
       headers: getHeaders()
     });
     return handleResponse(res);

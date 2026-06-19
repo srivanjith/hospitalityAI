@@ -21,13 +21,17 @@ const staffRoutes = express.Router();
 const forecastRoutes = express.Router();
 const reportRoutes = express.Router();
 const aiRoutes = express.Router();
+const feedbackRoutes = express.Router();
 
 // Auth Controller imports
 const {
   loginUser,
+  registerUser,
+  googleLogin,
   getUserProfile,
   updateUserProfile,
-  forgotPassword
+  forgotPassword,
+  checkEmail
 } = require('./controllers/authController');
 
 // Booking Controller imports
@@ -48,7 +52,9 @@ const {
   updatePerformanceRating,
   deleteEmployee,
   submitStaffReport,
-  getStaffReports
+  getStaffReports,
+  submitFeedback,
+  getFeedbacks
 } = require('./controllers/staffController');
 
 // Forecast Controller imports
@@ -76,7 +82,10 @@ const { protect } = require('./middleware/authMiddleware');
 
 // Hook up Auth Routes
 authRoutes.post('/login', loginUser);
+authRoutes.post('/register', registerUser);
+authRoutes.post('/google-login', googleLogin);
 authRoutes.post('/forgot-password', forgotPassword);
+authRoutes.post('/check-email', checkEmail);
 authRoutes.get('/profile', protect, getUserProfile);
 authRoutes.put('/profile', protect, updateUserProfile);
 
@@ -111,6 +120,10 @@ reportRoutes.get('/export', protect, exportReport);
 aiRoutes.post('/chat', protect, aiChat);
 aiRoutes.post('/seed', protect, seedData);
 
+// Hook up Feedback Routes
+feedbackRoutes.post('/', protect, submitFeedback);
+feedbackRoutes.get('/', protect, getFeedbacks);
+
 // Register API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
@@ -119,6 +132,7 @@ app.use('/api/staff', staffRoutes);
 app.use('/api/forecasts', forecastRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/feedback', feedbackRoutes);
 
 // Base route
 app.get('/', (req, res) => {

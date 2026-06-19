@@ -121,7 +121,19 @@ const defineModels = () => {
     name: { type: DataTypes.STRING, allowNull: false },
     email: { type: DataTypes.STRING, allowNull: false, unique: true },
     password: { type: DataTypes.STRING, allowNull: false },
-    role: { type: DataTypes.ENUM('admin', 'manager', 'guest'), defaultValue: 'manager' }
+    role: { type: DataTypes.ENUM('admin', 'manager', 'guest'), defaultValue: 'manager' },
+    phone: { type: DataTypes.STRING, allowNull: true },
+    address: { type: DataTypes.STRING, allowNull: true },
+    preferredRoom: { type: DataTypes.STRING, allowNull: true },
+    specialRequests: { type: DataTypes.TEXT, allowNull: true },
+    isGoogleLogin: { type: DataTypes.BOOLEAN, defaultValue: false },
+    profilePicture: { type: DataTypes.TEXT, allowNull: true },
+    gender: { type: DataTypes.STRING, allowNull: true },
+    dob: { type: DataTypes.STRING, allowNull: true },
+    city: { type: DataTypes.STRING, allowNull: true },
+    state: { type: DataTypes.STRING, allowNull: true },
+    country: { type: DataTypes.STRING, allowNull: true },
+    pincode: { type: DataTypes.STRING, allowNull: true }
   });
 
   Models.hotels = sequelize.define('hotels', {
@@ -196,6 +208,17 @@ const defineModels = () => {
     service: { type: DataTypes.STRING, allowNull: false }
   }, {
     tableName: 'staffReports'
+  });
+
+  Models.feedbacks = sequelize.define('feedbacks', {
+    id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+    guestName: { type: DataTypes.STRING, allowNull: false },
+    roomNo: { type: DataTypes.STRING, allowNull: false },
+    category: { type: DataTypes.STRING, allowNull: false },
+    rating: { type: DataTypes.INTEGER, allowNull: false },
+    comments: { type: DataTypes.TEXT, allowNull: false }
+  }, {
+    tableName: 'feedbacks'
   });
 };
 

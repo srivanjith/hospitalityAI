@@ -68,12 +68,7 @@ export const AuthProvider = ({ children }) => {
     if (updatedUser.token) {
       localStorage.setItem('token', updatedUser.token);
     }
-    setUser({
-      id: updatedUser.id,
-      name: updatedUser.name,
-      email: updatedUser.email,
-      role: updatedUser.role
-    });
+    setUser(updatedUser);
     return updatedUser;
   };
 

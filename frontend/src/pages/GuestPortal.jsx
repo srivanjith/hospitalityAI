@@ -27,7 +27,8 @@ import {
   Compass,
   Bed,
   User,
-  Info
+  Info,
+  AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
@@ -125,8 +126,154 @@ const facilityCategories = [
   }
 ];
 
+const navLinks = [
+  { id: 'home', label: 'Home' },
+  { id: 'rooms-section', label: 'Rooms' },
+  { id: 'facilities-section', label: 'Facilities' },
+  { id: 'rules-section', label: 'Rules' },
+  { id: 'gallery-section', label: 'Gallery' },
+  { id: 'contact-section', label: 'Contact' }
+];
+
 const GuestPortal = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, updateProfile } = useAuth();
+
+  // Scroll & Active Section States
+  const [scrollY, setScrollY] = useState(0);
+  const [scrollDirection, setScrollDirection] = useState('none');
+  const [activeSection, setActiveSection] = useState('home');
+
+  useEffect(() => {
+    let lastY = window.scrollY;
+    const threshold = 8;
+
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      setScrollY(currentY);
+
+      // Determine scroll direction with threshold to prevent toggle flickering
+      const difference = currentY - lastY;
+      if (Math.abs(difference) > threshold) {
+        if (difference > 0) {
+          setScrollDirection('down');
+        } else {
+          setScrollDirection('up');
+        }
+        lastY = currentY;
+      }
+
+      // Track active section
+      const sections = ['home', 'rooms-section', 'facilities-section', 'rules-section', 'gallery-section', 'contact-section'];
+      let currentSection = 'home';
+      
+      for (const section of sections) {
+        const el = document.getElementById(section);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          if (rect.top <= 120 && rect.bottom >= 120) {
+            currentSection = section;
+            break;
+          }
+        }
+      }
+      setActiveSection(currentSection);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    handleScroll(); // initial call
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Profile View States
+  const [viewMode, setViewMode] = useState('portal'); // 'portal' | 'profile'
+  const [profilePhone, setProfilePhone] = useState('');
+  const [profileAddress, setProfileAddress] = useState('');
+  const [profileRoomPref, setProfileRoomPref] = useState('Standard Room');
+  const [profileSpecialReq, setProfileSpecialReq] = useState('');
+  const [profilePicture, setProfilePicture] = useState('');
+  const [profileGender, setProfileGender] = useState('');
+  const [profileDob, setProfileDob] = useState('');
+  const [profileCity, setProfileCity] = useState('');
+  const [profileState, setProfileState] = useState('');
+  const [profileCountry, setProfileCountry] = useState('');
+  const [profilePincode, setProfilePincode] = useState('');
+  const [profileUpdateLoading, setProfileUpdateLoading] = useState(false);
+  const [profileSuccessMsg, setProfileSuccessMsg] = useState(null);
+  const [profileErrorMsg, setProfileErrorMsg] = useState(null);
+  const [activeProfileTab, setActiveProfileTab] = useState('personal'); // 'personal' | 'preferences'
+  const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    if (viewMode !== 'profile') {
+      setIsEditing(false);
+    }
+  }, [viewMode]);
+
+  useEffect(() => {
+    setIsEditing(false);
+  }, [activeProfileTab]);
+
+  // Load profile details from database
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        const profile = await api.getProfile();
+        setProfilePhone(profile.phone || '');
+        setProfileAddress(profile.address || '');
+        setProfileRoomPref(profile.preferredRoom || 'Standard Room');
+        setProfileSpecialReq(profile.specialRequests || '');
+        setProfilePicture(profile.profilePicture || '');
+        setProfileGender(profile.gender || '');
+        setProfileDob(profile.dob || '');
+        setProfileCity(profile.city || '');
+        setProfileState(profile.state || '');
+        setProfileCountry(profile.country || '');
+        setProfilePincode(profile.pincode || '');
+      } catch (err) {
+        console.error('Failed to load profile details:', err);
+      }
+    };
+    if (user) {
+      fetchProfileData();
+    }
+  }, [user, viewMode]);
+
+  const handleProfilePictureChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 200 * 1024) { // 200KB limit
+        setProfileErrorMsg('Image size must be less than 200KB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfilePicture(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCancelEdit = async () => {
+    setIsEditing(false);
+    setProfileSuccessMsg(null);
+    setProfileErrorMsg(null);
+    try {
+      const profile = await api.getProfile();
+      setProfilePhone(profile.phone || '');
+      setProfileAddress(profile.address || '');
+      setProfileRoomPref(profile.preferredRoom || 'Standard Room');
+      setProfileSpecialReq(profile.specialRequests || '');
+      setProfilePicture(profile.profilePicture || '');
+      setProfileGender(profile.gender || '');
+      setProfileDob(profile.dob || '');
+      setProfileCity(profile.city || '');
+      setProfileState(profile.state || '');
+      setProfileCountry(profile.country || '');
+      setProfilePincode(profile.pincode || '');
+    } catch (err) {
+      console.error('Failed to load profile details on cancel:', err);
+    }
+  };
   
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
@@ -144,6 +291,7 @@ const GuestPortal = () => {
   const [activeRoomCategory, setActiveRoomCategory] = useState('All');
   const [selectedRoomShowcase, setSelectedRoomShowcase] = useState(null);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
+  const [selectedCategoryPage, setSelectedCategoryPage] = useState(null); // null | 'Standard' | 'Executive' | 'Luxury'
   const [bookingStep, setBookingStep] = useState('details'); // 'details' | 'payment' | 'card_details'
   const [cardholderName, setCardholderName] = useState('');
   const [cardNumber, setCardNumber] = useState('');
@@ -204,6 +352,55 @@ const GuestPortal = () => {
     setReportSubmitSuccess(false);
   };
 
+  // Feedback states
+  const [feedbackRating, setFeedbackRating] = useState(5);
+  const [feedbackCategory, setFeedbackCategory] = useState('Overall Stay');
+  const [feedbackRoomNo, setFeedbackRoomNo] = useState('');
+  const [feedbackComments, setFeedbackComments] = useState('');
+  const [feedbackSubmitSuccess, setFeedbackSubmitSuccess] = useState(false);
+  const [feedbackErrorMsg, setFeedbackErrorMsg] = useState(null);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+
+  const handleFeedbackSubmit = async (e) => {
+    e.preventDefault();
+    setFeedbackErrorMsg(null);
+    setFeedbackSubmitSuccess(false);
+
+    if (!feedbackRoomNo || !feedbackComments) {
+      setFeedbackErrorMsg('Please fill in all required fields.');
+      return;
+    }
+
+    setFeedbackLoading(true);
+    try {
+      await api.submitFeedback({
+        guestName: user.name,
+        roomNo: feedbackRoomNo,
+        category: feedbackCategory,
+        rating: Number(feedbackRating),
+        comments: feedbackComments
+      });
+      setFeedbackSubmitSuccess(true);
+      setFeedbackRoomNo('');
+      setFeedbackComments('');
+      setFeedbackRating(5);
+      setFeedbackCategory('Overall Stay');
+    } catch (err) {
+      setFeedbackErrorMsg(err.message || 'Failed to submit feedback. Please try again.');
+    } finally {
+      setFeedbackLoading(false);
+    }
+  };
+
+  const handleFeedbackCancel = () => {
+    setFeedbackRoomNo('');
+    setFeedbackComments('');
+    setFeedbackRating(5);
+    setFeedbackCategory('Overall Stay');
+    setFeedbackErrorMsg(null);
+    setFeedbackSubmitSuccess(false);
+  };
+
   // Load guest's recent bookings
   const loadGuestBookings = useCallback(async () => {
     try {
@@ -225,7 +422,10 @@ const GuestPortal = () => {
 
   useEffect(() => {
     setActiveImageIdx(0);
-  }, [selectedRoomShowcase]);
+    if (selectedRoomShowcase && selectedCategoryPage) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [selectedRoomShowcase, selectedCategoryPage]);
 
   const handleOpenBooking = (type) => {
     setRoomType(type);
@@ -317,7 +517,8 @@ const GuestPortal = () => {
       gradient: 'from-slate-700 to-slate-900',
       bedText: '1 king bed',
       guestsLayout: '3+1',
-      category: 'Standard'
+      category: 'Standard',
+      image: '/room_standard_1.png'
     },
     {
       name: 'Guest room, 2 Queen or 2 Twin/Single Bed(s), City view',
@@ -327,7 +528,8 @@ const GuestPortal = () => {
       gradient: 'from-slate-800 to-slate-955',
       bedText: '2 twin beds',
       guestsLayout: '3',
-      category: 'Standard'
+      category: 'Standard',
+      image: '/room_standard_2.png'
     },
     {
       name: 'Concierge level, Guest room, 1 King, City view, Corner room',
@@ -337,7 +539,8 @@ const GuestPortal = () => {
       gradient: 'from-[#805e0c] to-[#1a2333]',
       bedText: '1 king bed',
       guestsLayout: '3',
-      category: 'Executive'
+      category: 'Executive',
+      image: '/room_executive_1.png'
     },
     {
       name: 'Club lounge access, Guest room, 2 Twin/Single Bed(s)',
@@ -347,7 +550,8 @@ const GuestPortal = () => {
       gradient: 'from-[#aa7c11] to-[#1e293b]',
       bedText: '2 twin beds',
       guestsLayout: '3',
-      category: 'Standard'
+      category: 'Standard',
+      image: '/room_standard_3.png'
     },
     {
       name: 'Club lounge access, 1 Bedroom Junior Suite, 1 King',
@@ -357,7 +561,8 @@ const GuestPortal = () => {
       gradient: 'from-[#92680a] to-[#121824]',
       bedText: '1 king bed',
       guestsLayout: '3+1',
-      category: 'Executive'
+      category: 'Executive',
+      image: '/room_executive_2.png'
     },
     {
       name: 'Deluxe Suite, Club lounge access, 1 Bedroom Larger Suite',
@@ -367,7 +572,8 @@ const GuestPortal = () => {
       gradient: 'from-luxury-navy to-[#131926]',
       bedText: '1 king bed',
       guestsLayout: '3+1',
-      category: 'Luxury'
+      category: 'Luxury',
+      image: '/room_luxury_1.png'
     },
     {
       name: 'Club lounge access, 1 Bedroom Executive Suite, 1 King',
@@ -377,7 +583,8 @@ const GuestPortal = () => {
       gradient: 'from-slate-900 via-luxury-navy to-[#0b0e14]',
       bedText: '1 king bed',
       guestsLayout: '3+1',
-      category: 'Executive'
+      category: 'Executive',
+      image: '/room_executive_3.png'
     },
     {
       name: 'TamilNadu Suite, Club lounge access, 1 King, City view',
@@ -387,7 +594,8 @@ const GuestPortal = () => {
       gradient: 'from-[#aa7c11] via-[#3b2a0c] to-[#0b0e14]',
       bedText: '1 king bed',
       guestsLayout: '3+1',
-      category: 'Executive'
+      category: 'Executive',
+      image: '/room_executive_4.png'
     },
     {
       name: 'Concierge level, 2 Bedroom Presidential Suite, 2 King',
@@ -397,18 +605,19 @@ const GuestPortal = () => {
       gradient: 'from-[#0b0f19] via-[#aa7c11] to-[#0b0f19]',
       bedText: '1 king bed',
       guestsLayout: '3+1',
-      category: 'Luxury'
+      category: 'Luxury',
+      image: '/room_luxury_2.png'
     }
   ];
 
   // Testimonials
   const testimonials = [
     {
-      quote: "The service at The Grand Royal Resort was absolute perfection. The attention to detail, oceanfront view, and immediate guest check-in parameters are outstanding.",
+      quote: "The service at The Grand Royal Resort was absolute perfection. The attention to detail, scenic surroundings, and immediate guest check-in parameters are outstanding.",
       author: "Charlotte H., VIP Guest"
     },
     {
-      quote: "Simply the finest stay in Miami. The suites are exceptionally designed with curated styling, and the poolside services feel incredibly exclusive.",
+      quote: "Simply the finest stay in Sathy. The suites are exceptionally designed with curated styling, and the poolside services feel incredibly exclusive.",
       author: "Robert T., Business Ambassador"
     }
   ];
@@ -422,7 +631,7 @@ const GuestPortal = () => {
 
   const renderRoomShowcase = (room) => {
     const showcaseImages = [
-      { src: '/luxury_bedroom.png', title: 'Master Bedroom & Sleeping Area', label: 'Primary Area' },
+      { src: room.image || '/luxury_bedroom.png', title: 'Master Bedroom & Sleeping Area', label: 'Primary Area' },
       { src: '/luxury_hall.png', title: 'Gilded Living Hall', label: 'Living Area' },
       { src: '/luxury_kitchen.png', title: 'En-suite Kitchen', label: 'Dining Area' },
       { src: '/luxury_washroom.png', title: 'Marble Washroom', label: 'Restroom' }
@@ -506,7 +715,19 @@ const GuestPortal = () => {
               {/* Back navigation & Nightly price */}
               <div className="flex items-center justify-between">
                 <button 
-                  onClick={() => setSelectedRoomShowcase(null)}
+                  onClick={() => {
+                    setSelectedRoomShowcase(null);
+                    if (selectedCategoryPage) {
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } else {
+                      setTimeout(() => {
+                        const el = document.getElementById('rooms-section');
+                        if (el) {
+                          el.scrollIntoView({ behavior: 'smooth' });
+                        }
+                      }, 50);
+                    }
+                  }}
                   className="text-[11px] font-bold uppercase tracking-wider text-slate-450 hover:text-luxury-gold transition-colors flex items-center space-x-1 cursor-pointer bg-transparent border-none focus:outline-none"
                 >
                   <span>← Back to accommodations</span>
@@ -620,11 +841,158 @@ const GuestPortal = () => {
     );
   };
 
+  const isTop = scrollY < 50;
+  const showSticky = viewMode !== 'profile' && !selectedCategoryPage && isTop;
+  const showFloating = viewMode !== 'profile' && !selectedCategoryPage && !isTop;
+
+  // Category page renderer
+  const renderCategoryPage = (categoryId) => {
+    const catMeta = roomCategories.find(c => c.id === categoryId);
+    const filteredRooms = rooms.filter(r => r.category === categoryId);
+    const CatIcon = catMeta?.icon;
+    const gradientMap = {
+      Standard: 'from-slate-900 via-slate-800 to-slate-900',
+      Executive: 'from-[#0b0e19] via-[#1a1200] to-[#0b0e19]',
+      Luxury: 'from-[#0a0c14] via-[#1a1100] to-[#0a0c14]'
+    };
+    const accentMap = {
+      Standard: 'text-blue-300',
+      Executive: 'text-luxury-gold',
+      Luxury: 'text-amber-300'
+    };
+
+    if (selectedRoomShowcase) {
+      return (
+        <div className="min-h-screen bg-luxury-cream dark:bg-luxury-dark py-12 px-8 sm:px-16 animate-fade-in">
+          <div className="max-w-6xl mx-auto">
+            {renderRoomShowcase(selectedRoomShowcase)}
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="min-h-screen bg-luxury-cream dark:bg-luxury-dark">
+        {/* Hero Banner for this category */}
+        <div className={`relative py-28 px-8 sm:px-16 bg-gradient-to-br ${gradientMap[categoryId]} overflow-hidden`}>
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="absolute top-[-10%] right-[-5%] w-[40%] h-[80%] rounded-full bg-luxury-gold/5 blur-[100px] pointer-events-none" />
+          <div className="relative z-10 max-w-6xl mx-auto text-center space-y-5">
+            {/* Back button */}
+            <button
+              onClick={() => setSelectedCategoryPage(null)}
+              className="absolute left-0 top-0 flex items-center space-x-2 text-slate-300 hover:text-luxury-gold transition-colors text-xs font-bold uppercase tracking-wider cursor-pointer bg-transparent border-none group"
+            >
+              <span className="text-lg group-hover:-translate-x-1 transition-transform inline-block">←</span>
+              <span>Back to All Rooms</span>
+            </button>
+            {CatIcon && <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-luxury-gold/10 border border-luxury-gold/30 mx-auto"><CatIcon className="h-7 w-7 text-luxury-gold" /></div>}
+            <p className={`text-[10px] uppercase tracking-[0.25em] font-bold font-mono ${accentMap[categoryId]}`}>Curated Accommodations</p>
+            <h2 className="text-4xl md:text-5xl font-serif font-bold text-white leading-tight">{catMeta?.name}</h2>
+            <p className="text-sm text-slate-400 max-w-lg mx-auto leading-relaxed">{catMeta?.desc}</p>
+            <div className="flex items-center justify-center space-x-3 pt-2">
+              <span className="h-px w-16 bg-luxury-gold/40" />
+              <span className="text-luxury-gold text-xs font-mono font-bold">{filteredRooms.length} {filteredRooms.length === 1 ? 'ROOM' : 'ROOMS'} AVAILABLE</span>
+              <span className="h-px w-16 bg-luxury-gold/40" />
+            </div>
+          </div>
+        </div>
+
+        {/* Rooms grid */}
+        <div className="max-w-6xl mx-auto px-8 sm:px-16 py-16 space-y-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-fade-in">
+            {filteredRooms.map((room) => (
+              <div
+                key={room.name}
+                className="glass-panel border border-slate-200/50 dark:border-slate-800/50 rounded-2xl overflow-hidden shadow-md flex flex-col hover:shadow-glow hover:-translate-y-1 transition-all duration-300 group"
+              >
+                {/* Image */}
+                <div className="h-52 bg-slate-900 overflow-hidden relative">
+                  <img
+                    src={room.image || '/luxury_bedroom.png'}
+                    alt={room.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  {/* Price */}
+                  <div className="absolute bottom-3 right-3 text-right">
+                    <span className="text-xl font-serif font-bold text-luxury-gold">₹{room.price}</span>
+                    <span className="text-[9px] text-slate-300 block leading-none mt-0.5">/ DAY</span>
+                  </div>
+                  {/* Badge */}
+                  <div className="absolute top-3 left-3">
+                    <span className="text-[8px] font-extrabold tracking-widest uppercase bg-luxury-gold text-luxury-navy px-2 py-0.5 rounded-md shadow-sm">
+                      {room.category}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Body */}
+                <div className="p-5 flex flex-col flex-1 space-y-4">
+                  <div className="space-y-2">
+                    <h4
+                      onClick={() => { setSelectedRoomShowcase(room); }}
+                      className="font-serif text-base font-bold text-luxury-navy dark:text-white leading-snug group-hover:text-luxury-gold cursor-pointer transition-colors duration-200"
+                    >
+                      {room.name}
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">{room.description}</p>
+                  </div>
+
+                  {/* Amenities chips */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {room.amenities.map(a => (
+                      <span key={a} className="text-[9px] font-semibold bg-luxury-gold/10 text-luxury-goldDark dark:text-luxury-gold border border-luxury-gold/20 px-2 py-0.5 rounded-full">{a}</span>
+                    ))}
+                  </div>
+
+                  {/* Bed & Guests */}
+                  <div className="flex items-center gap-4 text-[11px] text-slate-500 dark:text-slate-400">
+                    <div className="flex items-center space-x-1.5"><Bed className="h-3.5 w-3.5 text-luxury-gold/70" /><span>{room.bedText}</span></div>
+                    <div className="flex items-center space-x-1.5"><Users className="h-3.5 w-3.5 text-luxury-gold/70" /><span>{room.guestsLayout === '3+1' ? '3 + Roll-away' : 'Up to 3 Guests'}</span></div>
+                  </div>
+
+                  {/* CTA row */}
+                  <div className="pt-3 mt-auto border-t border-slate-100 dark:border-slate-850 flex items-center justify-between gap-3">
+                    <button
+                      onClick={() => { setSelectedRoomShowcase(room); }}
+                      className="text-[10px] font-bold text-slate-450 hover:text-luxury-gold transition-colors cursor-pointer bg-transparent border-none"
+                    >
+                      View Gallery &amp; Details
+                    </button>
+                    <button
+                      onClick={() => handleOpenBooking(room.name)}
+                      className="btn-gold py-1.5 px-4 text-[10px] uppercase tracking-wider font-bold"
+                    >
+                      Book Now
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Back button bottom */}
+          <div className="flex justify-center pt-6">
+            <button
+              onClick={() => setSelectedCategoryPage(null)}
+              className="flex items-center space-x-2 text-slate-500 hover:text-luxury-gold transition-colors text-xs font-bold uppercase tracking-wider cursor-pointer bg-transparent border-none group"
+            >
+              <span className="group-hover:-translate-x-1 transition-transform inline-block">←</span>
+              <span>Back to All Accommodations</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-luxury-cream dark:bg-luxury-dark text-slate-800 dark:text-slate-100 flex flex-col transition-colors duration-300 font-sans">
       
-      {/* 1. Header Navigation */}
-      <header className="fixed top-0 left-0 right-0 h-20 glass-panel border-b border-slate-200/50 dark:border-slate-800/50 z-40 flex items-center justify-between px-8 sm:px-16 animate-slide-down">
+      {/* 1. Sticky Header Navigation (Default) */}
+      <header className={`fixed top-0 left-0 right-0 h-20 glass-panel border-b border-slate-200/50 dark:border-slate-800/50 z-40 flex items-center justify-between px-8 sm:px-16 transform transition-all duration-300 ease-in-out ${
+        showSticky ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'
+      }`}>
         {/* Brand Logo */}
         <div className="flex items-center space-x-2">
           <Hotel className="h-6 w-6 text-luxury-gold animate-pulse" />
@@ -632,30 +1000,46 @@ const GuestPortal = () => {
             <h1 className="text-lg font-bold tracking-wider font-serif text-luxury-navy dark:text-white leading-none">
               THE GRAND ROYAL
             </h1>
-            <span className="text-[9px] uppercase tracking-widest text-luxury-goldDark dark:text-luxury-gold font-bold">Miami resort</span>
+            <span className="text-[9px] uppercase tracking-widest text-luxury-goldDark dark:text-luxury-gold font-bold">Sathy Resort</span>
           </div>
         </div>
 
         {/* Links Navigation */}
         <nav className="hidden md:flex items-center space-x-8 text-xs font-semibold uppercase tracking-wider">
-          <a href="#home" className="hover:text-luxury-gold transition-colors relative after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-[1px] after:bg-luxury-gold hover:after:w-full after:transition-all">Home</a>
-          <a href="#rooms-section" className="hover:text-luxury-gold transition-colors relative after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-[1px] after:bg-luxury-gold hover:after:w-full after:transition-all">Rooms</a>
-          <a href="#facilities-section" className="hover:text-luxury-gold transition-colors relative after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-[1px] after:bg-luxury-gold hover:after:w-full after:transition-all">Facilities</a>
-          <a href="#rules-section" className="hover:text-luxury-gold transition-colors relative after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-[1px] after:bg-luxury-gold hover:after:w-full after:transition-all">Rules</a>
-          <a href="#gallery-section" className="hover:text-luxury-gold transition-colors relative after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-[1px] after:bg-luxury-gold hover:after:w-full after:transition-all">Gallery</a>
-          <a href="#contact-section" className="hover:text-luxury-gold transition-colors relative after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-[1px] after:bg-luxury-gold hover:after:w-full after:transition-all">Contact</a>
+          {navLinks.map((link) => (
+            <a
+              key={link.id}
+              href={`#${link.id}`}
+              className="hover:text-luxury-gold transition-colors relative after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-[1px] after:bg-luxury-gold hover:after:w-full after:transition-all"
+            >
+              {link.label}
+            </a>
+          ))}
         </nav>
 
         {/* User profile & logout */}
         <div className="flex items-center space-x-4">
           <div className="hidden sm:block text-right">
-            <span className="text-xs text-slate-400 block font-medium">Signed in as</span>
-            <span className="text-xs font-bold text-luxury-navy dark:text-white">{user.name}</span>
+            <span className="text-xs text-slate-450 block font-medium">Signed in as</span>
+            <button
+              onClick={() => setViewMode(viewMode === 'profile' ? 'portal' : 'profile')}
+              className="text-xs font-bold text-luxury-gold hover:underline cursor-pointer bg-transparent border-none p-0 focus:outline-none"
+            >
+              {viewMode === 'profile' ? '← Back to Resort' : `👤 ${user.name}`}
+            </button>
           </div>
           <div className="h-8 w-[1px] bg-slate-200 dark:bg-slate-850"></div>
+          {viewMode === 'portal' && (
+            <button
+              onClick={() => setViewMode('profile')}
+              className="px-3 py-1.5 rounded-lg bg-luxury-gold/10 border border-luxury-gold/20 text-luxury-gold hover:bg-luxury-gold/20 text-xs font-bold transition-all cursor-pointer hidden sm:inline-block"
+            >
+              My Profile
+            </button>
+          )}
           <button
             onClick={logout}
-            className="p-2 rounded-full border border-red-500/20 text-red-500 hover:bg-red-500/10 cursor-pointer transition-colors"
+            className="p-2 rounded-full border border-red-500/20 text-red-500 hover:bg-red-500/10 cursor-pointer transition-colors flex-shrink-0"
             title="Log Out"
           >
             <LogOut className="h-4 w-4" />
@@ -663,16 +1047,623 @@ const GuestPortal = () => {
         </div>
       </header>
 
-      {/* 2. Hero Full-Screen Banner */}
-      <section id="home" className="relative h-screen flex items-center justify-center pt-20 overflow-hidden">
-        {/* Custom Visual Gradient Backdrop simulating a luxury hotel suite */}
-        <div className="absolute inset-0 bg-gradient-to-tr from-[#0b0f19] via-[#0f172a] to-[#251f14] z-0"></div>
+      {/* 2. Floating Capsule Navigation (Scrolled) */}
+      <div className={`fixed top-4 left-1/2 -translate-x-1/2 h-16 md:h-18 w-[95%] xl:w-[1200px] max-w-[95%] glass-panel border border-slate-200/50 dark:border-slate-800/80 rounded-full px-6 md:px-8 shadow-2xl z-50 flex items-center justify-between transition-all duration-300 ease-in-out pointer-events-auto ${
+        showFloating ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-6 scale-95 pointer-events-none'
+      }`}>
+        {/* Brand Logo - EXACT same layout and elements as sticky header */}
+        <div className="flex items-center space-x-2 flex-shrink-0">
+          <Hotel className="h-5 w-5 md:h-6 md:w-6 text-luxury-gold animate-pulse" />
+          <div>
+            <h1 className="text-sm md:text-lg font-bold tracking-wider font-serif text-luxury-navy dark:text-white leading-none">
+              THE GRAND ROYAL
+            </h1>
+            <span className="text-[8px] md:text-[9px] uppercase tracking-widest text-luxury-goldDark dark:text-luxury-gold font-bold block">Sathy Resort</span>
+          </div>
+        </div>
+
+        {/* Middle: Links Navigation (Exact same list of links and uppercase text-xs font style) */}
+        <nav className="flex items-center flex-nowrap overflow-x-auto scrollbar-none max-w-full space-x-1 justify-center w-full md:w-auto px-2">
+          {navLinks.map((link) => {
+            const isActive = activeSection === link.id;
+            return (
+              <a
+                key={link.id}
+                href={`#${link.id}`}
+                className={`px-3 md:px-3.5 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-all duration-300 flex-shrink-0 ${
+                  isActive
+                    ? 'bg-slate-800/85 dark:bg-white/10 text-luxury-gold dark:text-white shadow-sm'
+                    : 'text-slate-550 dark:text-slate-350 hover:text-luxury-gold dark:hover:text-white hover:bg-slate-100/50 dark:hover:bg-white/5'
+                }`}
+              >
+                {link.label}
+              </a>
+            );
+          })}
+        </nav>
+
+        {/* Right: User profile & logout - EXACT same layout and elements as sticky header */}
+        <div className="flex items-center space-x-3 md:space-x-4 flex-shrink-0">
+          <div className="hidden sm:block text-right">
+            <span className="text-[10px] md:text-xs text-slate-450 block font-medium">Signed in as</span>
+            <button
+              onClick={() => setViewMode(viewMode === 'profile' ? 'portal' : 'profile')}
+              className="text-[10px] md:text-xs font-bold text-luxury-gold hover:underline cursor-pointer bg-transparent border-none p-0 focus:outline-none"
+            >
+              {viewMode === 'profile' ? '← Back to Resort' : `👤 ${user.name}`}
+            </button>
+          </div>
+          <div className="h-6 md:h-8 w-[1px] bg-slate-200 dark:bg-slate-850"></div>
+          {viewMode === 'portal' && (
+            <button
+              onClick={() => setViewMode('profile')}
+              className="px-2.5 py-1 md:px-3 md:py-1.5 rounded-full bg-luxury-gold/10 border border-luxury-gold/20 text-luxury-gold hover:bg-luxury-gold/20 text-[10px] md:text-xs font-bold transition-all cursor-pointer hidden sm:inline-block"
+            >
+              My Profile
+            </button>
+          )}
+          <button
+            onClick={logout}
+            className="p-1.5 md:p-2 rounded-full border border-red-500/20 text-red-500 hover:bg-red-500/10 cursor-pointer transition-colors flex-shrink-0"
+            title="Log Out"
+          >
+            <LogOut className="h-3.5 w-3.5 md:h-4 md:w-4" />
+          </button>
+        </div>
+      </div>
+
+      {selectedCategoryPage ? (
+        <div className="pt-0 flex-1 animate-fade-in">
+          {renderCategoryPage(selectedCategoryPage)}
+        </div>
+      ) : viewMode === 'profile' ? (
+        <div className="pt-28 pb-20 px-6 sm:px-16 flex-1 bg-gradient-to-tr from-[#06080e] via-[#0b0e17] to-[#151c2d] flex items-center justify-center relative overflow-hidden">
+          {/* Glowing premium backgrounds */}
+          <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] rounded-full bg-luxury-gold/5 blur-[120px] pointer-events-none"></div>
+          <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] rounded-full bg-[#3b2a0c]/20 blur-[120px] pointer-events-none"></div>
+
+          <div className="w-full max-w-5xl bg-[#101625]/60 border border-slate-800/80 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-xl animate-fade-in grid grid-cols-1 md:grid-cols-12 min-h-[500px]">
+            {/* Left side card: Profile Avatar & Stats */}
+            <div className="md:col-span-4 p-8 bg-gradient-to-b from-[#080b13] via-[#0f1524] to-[#141b2b] border-r border-slate-800/50 flex flex-col justify-between items-center text-center">
+              <div className="space-y-6 w-full flex flex-col items-center">
+                {/* Gold glowing Avatar */}
+                <div className="relative">
+                  {profilePicture ? (
+                    <img 
+                      src={profilePicture} 
+                      alt={user.name} 
+                      className="w-24 h-24 rounded-full object-cover border-2 border-luxury-gold/40 shadow-glow/30"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 rounded-full bg-luxury-gold/10 border-2 border-luxury-gold/40 flex items-center justify-center text-luxury-gold font-serif text-3xl font-bold shadow-glow/30 animate-pulse">
+                      {user.name ? user.name.charAt(0) : 'U'}
+                    </div>
+                  )}
+                  <span className="absolute bottom-1 right-1 w-4 h-4 bg-emerald-500 border-2 border-[#080b13] rounded-full"></span>
+                </div>
+                
+                <div className="space-y-1">
+                  <h3 className="text-lg font-bold text-white font-serif tracking-wide">{user.name}</h3>
+                  <span className="text-[10px] text-luxury-gold uppercase tracking-widest font-mono font-bold bg-luxury-gold/10 px-2.5 py-0.5 rounded-full border border-luxury-gold/20 inline-block">
+                    GOLD MEMBER
+                  </span>
+                  <p className="text-[10px] text-slate-550 font-mono mt-1">{user.email}</p>
+                </div>
+
+                {/* Sub-tabs buttons */}
+                <div className="w-full space-y-2 pt-6">
+                  <button
+                    onClick={() => setActiveProfileTab('personal')}
+                    className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all text-left flex items-center space-x-2.5 cursor-pointer ${
+                      activeProfileTab === 'personal'
+                        ? 'bg-luxury-gold text-luxury-navy shadow-glow'
+                        : 'bg-white/[0.02] border border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <span>👤</span>
+                    <span>Personal Details</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveProfileTab('preferences')}
+                    className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all text-left flex items-center space-x-2.5 cursor-pointer ${
+                      activeProfileTab === 'preferences'
+                        ? 'bg-luxury-gold text-luxury-navy shadow-glow'
+                        : 'bg-white/[0.02] border border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <span>✨</span>
+                    <span>Booked Rooms 😁</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveProfileTab('report-staff')}
+                    className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all text-left flex items-center space-x-2.5 cursor-pointer ${
+                      activeProfileTab === 'report-staff'
+                        ? 'bg-luxury-gold text-luxury-navy shadow-glow'
+                        : 'bg-white/[0.02] border border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <span>⚠️</span>
+                    <span>Report Staff</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Account details info card */}
+              <div className="w-full border-t border-slate-800/80 pt-6 text-left space-y-2.5">
+                <div className="flex justify-between text-[10px] text-slate-455">
+                  <span>Joined Date:</span>
+                  <span className="text-white font-mono">joined </span>
+                </div>
+                <div className="flex justify-between text-[10px] text-slate-455">
+                  <span>Loyalty Level:</span>
+                  <span className="text-luxury-gold font-bold">user</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right side form */}
+            <div className="md:col-span-8 p-8 flex flex-col justify-between">
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-bold font-serif text-white tracking-wide">
+                    {activeProfileTab === 'personal' 
+                      ? 'Personal Information Profile' 
+                      : activeProfileTab === 'preferences' 
+                        ? 'Room Preferences' 
+                        : 'Report Staff Member'}
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-1">
+                    {activeProfileTab === 'personal'
+                      ? 'Update your contact information. These details will be automatically pre-filled when you log in.'
+                      : activeProfileTab === 'preferences'
+                        ? 'View your upcoming stays and active bookings at The Grand Royal Resort.'
+                        : 'Help us maintain our 5-star service standards. If you experienced any issues with our staff, file a report.'}
+                  </p>
+                </div>
+
+                {profileSuccessMsg && (
+                  <div className="p-3 bg-emerald-950/20 border border-emerald-500/20 text-emerald-400 rounded-lg text-xs animate-fade-in">
+                    {profileSuccessMsg}
+                  </div>
+                )}
+
+                {profileErrorMsg && (
+                  <div className="p-3 bg-red-950/20 border border-red-500/20 text-red-400 rounded-lg text-xs animate-fade-in">
+                    {profileErrorMsg}
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  {activeProfileTab === 'personal' ? (
+                    <>
+                      {/* Profile Picture Upload Section */}
+                      <div className="bg-[#0a0e1a]/40 border border-slate-800 rounded-xl p-4 flex items-center space-x-4 animate-fade-in text-left">
+                        <div className="relative">
+                          {profilePicture ? (
+                            <img
+                              src={profilePicture}
+                              alt="Profile Preview"
+                              className="w-16 h-16 rounded-full object-cover border border-luxury-gold/40"
+                            />
+                          ) : (
+                            <div className="w-16 h-16 rounded-full bg-luxury-gold/10 border border-luxury-gold/20 flex items-center justify-center text-luxury-gold font-serif text-xl font-bold">
+                              {user.name ? user.name.charAt(0) : 'U'}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 space-y-1.5">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Profile Picture</label>
+                          {isEditing ? (
+                            <>
+                              <div className="flex items-center space-x-2">
+                                <label className="bg-luxury-gold/10 border border-luxury-gold/25 hover:bg-luxury-gold/20 text-luxury-gold text-[10px] font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-all">
+                                  Upload Image
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleProfilePictureChange}
+                                    className="hidden"
+                                  />
+                                </label>
+                                {profilePicture && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setProfilePicture('')}
+                                    className="border border-red-500/35 hover:bg-red-500/10 text-red-400 text-[10px] font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-all"
+                                  >
+                                    Remove
+                                  </button>
+                                )}
+                              </div>
+                              <span className="text-[8px] text-slate-500 block">Maximum size 200KB. PNG, JPG or GIF formats.</span>
+                            </>
+                          ) : (
+                            <span className="text-[11px] text-slate-400 block font-medium">Click "Edit Profile" below to change profile picture.</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Name & Email input */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5 text-left">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Full Name</label>
+                          <input
+                            type="text"
+                            value={user.name}
+                            disabled
+                            className="w-full bg-[#0a0e1a]/40 border border-slate-800 text-slate-505 rounded-lg px-3.5 py-2.5 text-xs cursor-not-allowed"
+                          />
+                        </div>
+                        <div className="space-y-1.5 text-left">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Email Address</label>
+                          <input
+                            type="email"
+                            value={user.email}
+                            disabled
+                            className="w-full bg-[#0a0e1a]/40 border border-slate-800 text-slate-505 rounded-lg px-3.5 py-2.5 text-xs cursor-not-allowed font-mono"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Phone, Gender, DOB */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-1.5 text-left">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Phone Number</label>
+                          <input
+                            type="tel"
+                            value={profilePhone}
+                            onChange={(e) => setProfilePhone(e.target.value)}
+                            placeholder={isEditing ? "+91 96666 66884" : "Not Provided"}
+                            disabled={!isEditing}
+                            className={`w-full rounded-lg px-3.5 py-2.5 text-xs transition-all ${
+                              isEditing
+                                ? 'bg-[#0a0e1a]/60 border border-slate-800 focus:border-luxury-gold text-white focus:outline-none'
+                                : 'bg-[#0a0e1a]/30 border border-slate-900/50 text-slate-300 cursor-default'
+                            }`}
+                          />
+                        </div>
+                        <div className="space-y-1.5 text-left">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Gender (Optional)</label>
+                          <select
+                            value={profileGender}
+                            onChange={(e) => setProfileGender(e.target.value)}
+                            disabled={!isEditing}
+                            className={`w-full rounded-lg px-3.5 py-2.5 text-xs transition-all ${
+                              isEditing
+                                ? 'bg-[#0a0e1a]/60 border border-slate-800 focus:border-luxury-gold text-white focus:outline-none'
+                                : 'bg-[#0a0e1a]/30 border border-slate-900/50 text-slate-300 cursor-default appearance-none'
+                            }`}
+                          >
+                            <option value="">Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                            <option value="Prefer not to say">Prefer not to say</option>
+                          </select>
+                        </div>
+                        <div className="space-y-1.5 text-left">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Date of Birth (Optional)</label>
+                          <input
+                            type="date"
+                            value={profileDob}
+                            onChange={(e) => setProfileDob(e.target.value)}
+                            disabled={!isEditing}
+                            className={`w-full rounded-lg px-3.5 py-2.5 text-xs transition-all font-mono ${
+                              isEditing
+                                ? 'bg-[#0a0e1a]/60 border border-slate-800 focus:border-luxury-gold text-white focus:outline-none'
+                                : 'bg-[#0a0e1a]/30 border border-slate-900/50 text-slate-300 cursor-default'
+                            }`}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Residential Address */}
+                      <div className="space-y-1.5 text-left">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Address</label>
+                        <input
+                          type="text"
+                          value={profileAddress}
+                          onChange={(e) => setProfileAddress(e.target.value)}
+                          placeholder={isEditing ? "Street name, door no, apartment etc." : "Not Provided"}
+                          disabled={!isEditing}
+                          className={`w-full rounded-lg px-3.5 py-2.5 text-xs transition-all ${
+                            isEditing
+                              ? 'bg-[#0a0e1a]/60 border border-slate-800 focus:border-luxury-gold text-white focus:outline-none'
+                              : 'bg-[#0a0e1a]/30 border border-slate-900/50 text-slate-300 cursor-default'
+                          }`}
+                        />
+                      </div>
+
+                      {/* City & State */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5 text-left">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">City</label>
+                          <input
+                            type="text"
+                            value={profileCity}
+                            onChange={(e) => setProfileCity(e.target.value)}
+                            placeholder={isEditing ? "e.g. Sathy" : "Not Provided"}
+                            disabled={!isEditing}
+                            className={`w-full rounded-lg px-3.5 py-2.5 text-xs transition-all ${
+                              isEditing
+                                ? 'bg-[#0a0e1a]/60 border border-slate-800 focus:border-luxury-gold text-white focus:outline-none'
+                                : 'bg-[#0a0e1a]/30 border border-slate-900/50 text-slate-300 cursor-default'
+                            }`}
+                          />
+                        </div>
+                        <div className="space-y-1.5 text-left">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">State</label>
+                          <input
+                            type="text"
+                            value={profileState}
+                            onChange={(e) => setProfileState(e.target.value)}
+                            placeholder={isEditing ? "e.g. Tamil Nadu" : "Not Provided"}
+                            disabled={!isEditing}
+                            className={`w-full rounded-lg px-3.5 py-2.5 text-xs transition-all ${
+                              isEditing
+                                ? 'bg-[#0a0e1a]/60 border border-slate-800 focus:border-luxury-gold text-white focus:outline-none'
+                                : 'bg-[#0a0e1a]/30 border border-slate-900/50 text-slate-300 cursor-default'
+                            }`}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Country & Pincode */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5 text-left">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Country</label>
+                          <input
+                            type="text"
+                            value={profileCountry}
+                            onChange={(e) => setProfileCountry(e.target.value)}
+                            placeholder={isEditing ? "e.g. India" : "Not Provided"}
+                            disabled={!isEditing}
+                            className={`w-full rounded-lg px-3.5 py-2.5 text-xs transition-all ${
+                              isEditing
+                                ? 'bg-[#0a0e1a]/60 border border-slate-800 focus:border-luxury-gold text-white focus:outline-none'
+                                : 'bg-[#0a0e1a]/30 border border-slate-900/50 text-slate-300 cursor-default'
+                            }`}
+                          />
+                        </div>
+                        <div className="space-y-1.5 text-left">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Pincode / ZIP Code</label>
+                          <input
+                            type="text"
+                            value={profilePincode}
+                            onChange={(e) => setProfilePincode(e.target.value)}
+                            placeholder={isEditing ? "e.g. 638401" : "Not Provided"}
+                            disabled={!isEditing}
+                            className={`w-full rounded-lg px-3.5 py-2.5 text-xs transition-all font-mono ${
+                              isEditing
+                                ? 'bg-[#0a0e1a]/60 border border-slate-800 focus:border-luxury-gold text-white focus:outline-none'
+                                : 'bg-[#0a0e1a]/30 border border-slate-900/50 text-slate-300 cursor-default'
+                            }`}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  ) : activeProfileTab === 'preferences' ? (
+                    <>
+                      {/* Upcoming Stays Section inside Room Preferences */}
+                      <div className="space-y-4 text-left">
+                        <h4 className="font-serif text-sm font-bold text-white flex items-center space-x-2">
+                          <CalendarDays className="h-4 w-4 text-luxury-gold" />
+                          <span className="tracking-wide text-white">Your Upcoming Stays</span>
+                        </h4>
+
+                        {recentBookings.length > 0 ? (
+                          <div className="space-y-3 animate-fade-in">
+                            {recentBookings.map((b) => (
+                              <div key={b.id || b._id} className="p-4 bg-[#0a0e1a]/60 border border-slate-800 rounded-2xl flex items-center justify-between shadow-sm">
+                                <div className="space-y-1">
+                                  <span className="text-xs font-bold block text-white leading-normal max-w-sm">{b.roomType}</span>
+                                  <span className="text-[10px] text-slate-400 block mt-1 font-mono">
+                                    {new Date(b.checkIn).toLocaleDateString()}{b.checkInTime ? ` (${b.checkInTime})` : ''} - {new Date(b.checkOut).toLocaleDateString()}{b.checkOutTime ? ` (${b.checkOutTime})` : ''}
+                                  </span>
+                                </div>
+                                <span className="text-[9px] font-extrabold uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full tracking-wider">
+                                  BOOKED
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="p-6 bg-[#0a0e1a]/30 border border-dashed border-slate-800 rounded-2xl text-center text-xs text-slate-500 italic">
+                            no suite's were booked till now
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Report Staff Section inside Profile */}
+                      <div className="space-y-4 text-left animate-fade-in">
+                        {reportSubmitSuccess && (
+                          <div className="p-3 bg-emerald-950/20 border border-emerald-500/20 text-emerald-400 rounded-lg text-xs text-center mb-4">
+                            Report submitted successfully! The quality control team will investigate this incident.
+                          </div>
+                        )}
+
+                        {reportErrorMsg && (
+                          <div className="p-3 bg-red-950/20 border border-red-500/20 text-red-400 rounded-lg text-xs text-center mb-4">
+                            {reportErrorMsg}
+                          </div>
+                        )}
+
+                        <form onSubmit={handleReportSubmit} className="space-y-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {/* Guest Name */}
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Your Name</label>
+                              <input
+                                type="text"
+                                required
+                                value={reportName}
+                                onChange={(e) => setReportName(e.target.value)}
+                                className="w-full bg-[#0a0e1a]/60 border border-slate-800 text-white rounded-lg px-3.5 py-2.5 text-xs focus:border-luxury-gold focus:outline-none transition-colors"
+                              />
+                            </div>
+
+                            {/* Room Number */}
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Room Number</label>
+                              <input
+                                type="text"
+                                required
+                                value={reportRoomNo}
+                                onChange={(e) => setReportRoomNo(e.target.value)}
+                                placeholder="e.g. 302"
+                                className="w-full bg-[#0a0e1a]/60 border border-slate-800 text-white rounded-lg px-3.5 py-2.5 text-xs focus:border-luxury-gold focus:outline-none transition-colors"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {/* Staff Member Name */}
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Staff Member Name</label>
+                              <input
+                                type="text"
+                                required
+                                value={reportStaffName}
+                                onChange={(e) => setReportStaffName(e.target.value)}
+                                placeholder="e.g. John Doe"
+                                className="w-full bg-[#0a0e1a]/60 border border-slate-800 text-white rounded-lg px-3.5 py-2.5 text-xs focus:border-luxury-gold focus:outline-none transition-colors"
+                              />
+                            </div>
+
+                            {/* Service Department */}
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Service Department</label>
+                              <input
+                                type="text"
+                                required
+                                value={reportService}
+                                onChange={(e) => setReportService(e.target.value)}
+                                placeholder="e.g. Housekeeping"
+                                className="w-full bg-[#0a0e1a]/60 border border-slate-800 text-white rounded-lg px-3.5 py-2.5 text-xs focus:border-luxury-gold focus:outline-none transition-colors"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Submit button inside form for this tab */}
+                          <div className="pt-4 flex justify-end space-x-3 border-t border-slate-805/30 mt-4">
+                            <button
+                              type="button"
+                              onClick={handleReportCancel}
+                              className="px-5 py-2 border border-slate-800 hover:bg-slate-800 rounded-lg text-xs font-semibold text-slate-400 transition-colors cursor-pointer animate-fade-in"
+                            >
+                              Reset
+                            </button>
+                            <button
+                              type="submit"
+                              disabled={reportLoading}
+                              className="px-6 py-2 bg-gradient-to-r from-luxury-gold to-luxury-goldDark text-luxury-navy hover:shadow-lg font-bold rounded-lg text-xs transition-all transform hover:-translate-y-0.5 cursor-pointer disabled:opacity-50"
+                            >
+                              {reportLoading ? 'Filing Report...' : 'File Report'}
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Submit panel */}
+              <div className="pt-6 border-t border-slate-800/80 flex justify-between items-center mt-6">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('portal')}
+                  className="px-5 py-2.5 rounded-lg text-xs font-bold text-slate-400 hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  Return to Portal
+                </button>
+                {activeProfileTab === 'personal' && (
+                  <div className="flex items-center">
+                    {isEditing ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={handleCancelEdit}
+                          className="px-5 py-2.5 border border-red-500/35 hover:bg-red-500/10 text-red-400 rounded-lg text-xs font-bold transition-all cursor-pointer mr-3"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          disabled={profileUpdateLoading}
+                          onClick={async () => {
+                            setProfileUpdateLoading(true);
+                            setProfileSuccessMsg(null);
+                            setProfileErrorMsg(null);
+                            try {
+                              await updateProfile({
+                                phone: profilePhone,
+                                address: profileAddress,
+                                profilePicture,
+                                gender: profileGender,
+                                dob: profileDob,
+                                city: profileCity,
+                                state: profileState,
+                                country: profileCountry,
+                                pincode: profilePincode
+                              });
+                              setProfileSuccessMsg('✨ Premium profile settings updated successfully in MySQL!');
+                              setIsEditing(false);
+                              setTimeout(() => setProfileSuccessMsg(null), 3000);
+                            } catch (err) {
+                              setProfileErrorMsg(err.message || 'Failed to update profile settings.');
+                            } finally {
+                              setProfileUpdateLoading(false);
+                            }
+                          }}
+                          className="bg-gradient-to-r from-luxury-gold via-yellow-500 to-luxury-goldDark text-luxury-navy font-bold py-2.5 px-6 rounded-lg text-xs uppercase tracking-wider shadow-glow hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 cursor-pointer disabled:opacity-50"
+                        >
+                          {profileUpdateLoading ? 'Saving...' : 'Save Settings'}
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditing(true)}
+                        className="bg-gradient-to-r from-luxury-gold via-yellow-500 to-luxury-goldDark text-luxury-navy font-bold py-2.5 px-6 rounded-lg text-xs uppercase tracking-wider shadow-glow hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 cursor-pointer"
+                      >
+                        Edit Profile
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* 2. Hero Full-Screen Banner */}
+          <section id="home" className="relative h-screen flex items-center justify-center pt-20 overflow-hidden">
+        {/* Video backdrop */}
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ transform: 'scale(1.05)' }}
+          >
+            <source src="/hotel-bg.mp4" type="video/mp4" />
+          </video>
+          {/* Light gradient overlay for text readability only */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/60"></div>
+        
+        </div>
         {/* Abstract Room Design Element */}
         <div className="absolute top-[20%] right-[-10%] w-[50%] h-[60%] rounded-full bg-luxury-gold/5 blur-[120px] pointer-events-none animate-float"></div>
         <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[60%] rounded-full bg-[#aa7c11]/5 blur-[120px] pointer-events-none animate-float-reverse"></div>
         
         {/* Hero Content Overlay */}
-        <div className="relative z-10 text-center max-w-4xl px-6 space-y-6 mt-12">
+        <div className="relative z-20 text-center max-w-4xl px-6 space-y-6 mt-12">
           {/* Rating */}
           <div className="flex items-center justify-center space-x-1 animate-slide-up animation-delay-100">
             {[1, 2, 3, 4, 5].map(i => (
@@ -685,11 +1676,11 @@ const GuestPortal = () => {
           </h2>
           
           <p className="text-md md:text-lg text-luxury-goldLight font-medium tracking-widest font-mono uppercase animate-slide-up animation-delay-300">
-            Your Golden Haven in Miami
+            Your Golden heaven in ERODE
           </p>
           
           <p className="text-sm md:text-base text-slate-300 max-w-2xl mx-auto leading-relaxed font-sans animate-slide-up animation-delay-400">
-            Escape to an oceanfront sanctuary of unparalleled comfort. Curated gourmet dining, exclusive wellness spas, and gold-standard personal service await your arrival.
+            Escape to a serene sanctuary of unparalleled comfort in the heart of Tamil Nadu. Curated dining, exclusive wellness spas, and gold-standard personal service await your arrival.
           </p>
 
           <div className="pt-4 animate-slide-up animation-delay-500">
@@ -704,9 +1695,9 @@ const GuestPortal = () => {
         </div>
 
         {/* Scroll Indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 text-slate-400 text-xs tracking-widest uppercase flex flex-col items-center space-y-1 animate-pulse">
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 text-slate-400 text-xs tracking-widest uppercase flex flex-col items-center space-y-1 animate-pulse">
           <span className="animate-bounce">↓</span>
-          <span>Scroll Down</span>
+          <span>here</span>
         </div>
       </section>
 
@@ -778,15 +1769,15 @@ const GuestPortal = () => {
         <div className="space-y-6">
           <div className="flex items-center space-x-2">
             <MapPin className="h-4 w-4 text-luxury-gold" />
-            <span className="text-xs uppercase tracking-widest text-slate-500 font-bold">Ocean Drive, Miami, FL</span>
+            <span className="text-xs uppercase tracking-widest text-slate-500 font-bold">Erode-Sathy Road, Sathy, Erode, Tamil Nadu</span>
           </div>
           
           <h3 className="text-3xl md:text-4xl font-serif font-bold dark:text-white leading-tight">
-            An Uncompromising Sanctuary of Coastal Comfort
+            An Uncompromising Sanctuary of Scenic Comfort
           </h3>
           
           <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-            Ideally situated along the pristine shores of Miami Beach, The Grand Royal Resort harmonizes structural elegance with premium hospitality parameters. Designed for global travelers, we provide an oasis of absolute calm, privacy, and state-of-the-art conveniences.
+            Ideally situated along the serene landscapes of Sathyamangalam, The Grand Royal Resort harmonizes structural elegance with premium hospitality parameters. Designed for global travelers, we provide an oasis of absolute calm, privacy, and state-of-the-art conveniences.
           </p>
 
           {/* Metadata details table */}
@@ -837,32 +1828,7 @@ const GuestPortal = () => {
         </div>
       </section>
 
-      {/* 5. Recent Bookings Drawer for the logged in guest */}
-      {recentBookings.length > 0 && (
-        <section className="py-8 px-8 sm:px-16 bg-slate-50 dark:bg-luxury-darkCard/25 border-y border-slate-200/50 dark:border-slate-800/50">
-          <div className="max-w-6xl mx-auto space-y-4">
-            <h4 className="font-serif text-md font-bold dark:text-white flex items-center space-x-2">
-              <CalendarDays className="h-4 w-4 text-luxury-gold" />
-              <span>Your Upcoming Stays</span>
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {recentBookings.map((b) => (
-                <div key={b.id || b._id} className="p-4 bg-white dark:bg-luxury-darkCard border border-slate-200/50 dark:border-slate-850 rounded-xl flex items-center justify-between shadow-sm">
-                  <div>
-                    <span className="text-xs font-bold block dark:text-white">{b.roomType}</span>
-                    <span className="text-[10px] text-slate-400 block mt-0.5">
-                      {new Date(b.checkIn).toLocaleDateString()} - {new Date(b.checkOut).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <span className="text-[9px] font-bold uppercase bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-2 py-0.5 rounded-full">
-                    {b.status}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+      {/* 5. Recent Bookings Drawer was moved to My Profile -> Room Preferences */}
 
       {/* 6. Featured Room Types with booking buttons */}
       <section id="rooms-section" className="py-20 px-8 sm:px-16 max-w-6xl mx-auto space-y-12">
@@ -880,12 +1846,20 @@ const GuestPortal = () => {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
               {roomCategories.map((cat) => {
                 const CatIcon = cat.icon;
+                const isActive = activeRoomCategory === cat.id;
                 return (
                   <button
                     key={cat.id}
-                    onClick={() => setActiveRoomCategory(cat.id)}
-                    className={`p-4 rounded-xl border text-center transition-all duration-300 cursor-pointer flex flex-col justify-center items-center h-28 shadow-sm hover:shadow-glow ${
-                      activeRoomCategory === cat.id
+                    onClick={() => {
+                      if (cat.id === 'All') {
+                        setActiveRoomCategory('All');
+                      } else {
+                        setSelectedCategoryPage(cat.id);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
+                    }}
+                    className={`p-4 rounded-xl border text-center transition-all duration-300 cursor-pointer flex flex-col justify-center items-center h-28 shadow-sm hover:shadow-glow group ${
+                      isActive
                         ? 'bg-luxury-navy border-luxury-gold text-luxury-gold dark:bg-luxury-darkCard dark:border-luxury-gold shadow-glow'
                         : 'bg-white border-slate-200/50 text-slate-500 dark:bg-luxury-darkCard/50 dark:border-slate-800/50 dark:text-slate-400 hover:border-luxury-gold/50'
                     }`}
@@ -893,6 +1867,9 @@ const GuestPortal = () => {
                     <CatIcon className="h-5 w-5 mb-2 text-luxury-gold" />
                     <span className="text-[11px] font-bold uppercase tracking-wider block">{cat.name}</span>
                     <span className="text-[8px] text-slate-405 dark:text-slate-500 hidden sm:block mt-1 leading-normal font-sans">{cat.desc}</span>
+                    {cat.id !== 'All' && (
+                      <span className="text-[8px] text-luxury-gold/70 mt-1 group-hover:text-luxury-gold transition-colors font-mono">View All →</span>
+                    )}
                   </button>
                 );
               })}
@@ -910,7 +1887,7 @@ const GuestPortal = () => {
                     {/* Visual Card Header */}
                     <div className="h-44 bg-slate-900 overflow-hidden relative">
                       <img 
-                        src="/luxury_bedroom.png" 
+                        src={room.image || "/luxury_bedroom.png"} 
                         alt={room.name} 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                       />
@@ -1202,7 +2179,7 @@ const GuestPortal = () => {
         <div className="text-center space-y-3">
           <span className="text-xs uppercase tracking-widest text-luxury-goldDark dark:text-luxury-gold font-bold">Visual Splendor</span>
           <h3 className="text-3xl md:text-4xl font-serif font-bold dark:text-white">Resort Photo Gallery</h3>
-          <p className="text-xs text-slate-400 max-w-md mx-auto">Explore snapshots of our coastal Miami property.</p>
+          <p className="text-xs text-slate-400 max-w-md mx-auto">Explore snapshots of our luxury Sathy property.</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
@@ -1267,7 +2244,7 @@ const GuestPortal = () => {
         <div className="space-y-6">
           <h3 className="text-3xl font-serif font-bold dark:text-white">Location & Contact</h3>
           <p className="text-xs text-slate-500 leading-relaxed">
-            Our luxury property is situated directly on the iconic strip of Miami Beach, offering immediate beach access and easy transit routes. Let us know if you require personal chauffeur coordination.
+            Our luxury property is situated directly on the Erode-Sathy road corridor, offering easy transit routes and premier local access. Let us know if you require personal chauffeur coordination.
           </p>
           <div className="space-y-3 text-xs">
             <div className="flex items-center space-x-3">
@@ -1289,120 +2266,135 @@ const GuestPortal = () => {
         <div className="bg-slate-100 dark:bg-luxury-darkCard border border-slate-200 dark:border-slate-800 rounded-3xl p-6 h-64 flex flex-col justify-between shadow-sm relative overflow-hidden">
           <div className="absolute inset-0 bg-[#aa7c11]/5 blur-[60px] pointer-events-none"></div>
           <div>
-            <span className="text-[9px] uppercase tracking-widest text-luxury-gold font-bold block mb-1">Miami beach coordinates</span>
-            <span className="text-xs font-bold block dark:text-white">Latitude: 25.7781° N | Longitude: 80.1313° W</span>
+            <span className="text-[9px] uppercase tracking-widest text-luxury-gold font-bold block mb-1">Sathy, Erode coordinates</span>
+            <span className="text-xs font-bold block dark:text-white">Latitude: 11.5034° N | Longitude: 77.2444° E</span>
           </div>
           {/* Mock vector map visual representation */}
           <div className="border border-dashed border-slate-300 dark:border-slate-850 p-4 rounded-xl flex-1 mt-4 flex items-center justify-center text-[10px] text-slate-450 bg-slate-50/50 dark:bg-luxury-dark/40 font-mono">
             <Compass className="h-6 w-6 text-luxury-gold mr-2 animate-spin-slow" />
-            <span>Interactive Map Vector Overlay (Miami Shoreline)</span>
+            <span>Interactive Map Vector Overlay (Sathy, Erode)</span>
           </div>
         </div>
       </section>
 
-      {/* 10. Report Staff Section */}
+      {/* 10. Guest Feedback Section */}
       <section className="max-w-6xl mx-auto py-12 px-8 sm:px-16 border-t border-slate-200 dark:border-slate-800 animate-fade-in">
         <div className="bg-gradient-to-br from-luxury-navy to-slate-900 border border-slate-800 rounded-3xl p-8 shadow-xl relative overflow-hidden">
           <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] rounded-full bg-luxury-gold/5 blur-[50px] pointer-events-none"></div>
           
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-8">
-              <span className="text-[9px] uppercase tracking-widest text-luxury-gold font-bold block mb-1">Service Quality Control</span>
-              <h2 className="text-2xl font-bold font-serif text-white tracking-wide">Report Staff Member</h2>
+              <span className="text-[9px] uppercase tracking-widest text-luxury-gold font-bold block mb-1">Your Experience Matters</span>
+              <h2 className="text-2xl font-bold font-serif text-white tracking-wide">Share Your Feedback</h2>
               <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-                Help us maintain our 5-star service standards. If you experienced any issues with our staff or services, please file a report below.
+                We are committed to providing you with an exceptional experience. Please share your rating and comments about your stay.
               </p>
             </div>
 
-            {reportSubmitSuccess && (
+            {feedbackSubmitSuccess && (
               <div className="p-4 bg-emerald-950/20 border border-emerald-500/20 text-emerald-400 rounded-lg text-xs text-center mb-6">
-                Report submitted successfully! The quality control team will investigate this incident.
+                Thank you for your valuable feedback! It has been submitted directly to hotel management.
               </div>
             )}
 
-            {reportErrorMsg && (
+            {feedbackErrorMsg && (
               <div className="p-4 bg-red-950/20 border border-red-500/20 text-red-400 rounded-lg text-xs text-center mb-6">
-                {reportErrorMsg}
+                {feedbackErrorMsg}
               </div>
             )}
 
-            <form onSubmit={handleReportSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Guest Name */}
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Your Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={reportName}
-                    onChange={(e) => setReportName(e.target.value)}
-                    className="w-full bg-luxury-dark border border-slate-800 text-white rounded-lg px-3 py-2 text-xs focus:border-luxury-gold focus:outline-none transition-colors"
-                  />
-                </div>
-
+            <form onSubmit={handleFeedbackSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Room Number */}
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Room Number</label>
                   <input
                     type="text"
                     required
-                    value={reportRoomNo}
-                    onChange={(e) => setReportRoomNo(e.target.value)}
+                    value={feedbackRoomNo}
+                    onChange={(e) => setFeedbackRoomNo(e.target.value)}
                     placeholder="e.g. 302"
                     className="w-full bg-luxury-dark border border-slate-800 text-white rounded-lg px-3 py-2 text-xs focus:border-luxury-gold focus:outline-none transition-colors"
                   />
                 </div>
+
+                {/* Feedback Category */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Feedback Category</label>
+                  <select
+                    value={feedbackCategory}
+                    onChange={(e) => setFeedbackCategory(e.target.value)}
+                    className="w-full bg-luxury-dark border border-slate-800 text-white rounded-lg px-3 py-2 text-xs focus:border-luxury-gold focus:outline-none transition-colors appearance-none"
+                  >
+                    <option value="Overall Stay">Overall Stay</option>
+                    <option value="Room Service">Room Service</option>
+                    <option value="Dining & Food">Dining & Food</option>
+                    <option value="Spa & Amenities">Spa & Amenities</option>
+                    <option value="Staff Hospitality">Staff Hospitality</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                {/* Rating (Stars) */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Rating</label>
+                  <div className="flex items-center space-x-1.5 h-9 bg-luxury-dark border border-slate-800 rounded-lg px-3">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setFeedbackRating(star)}
+                        className="focus:outline-none bg-transparent border-none p-0 cursor-pointer"
+                      >
+                        <Star
+                          className={`h-4.5 w-4.5 ${
+                            star <= feedbackRating
+                              ? 'text-luxury-gold fill-luxury-gold'
+                              : 'text-slate-600'
+                          } hover:scale-110 transition-transform`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Staff Member Name */}
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Staff Member Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={reportStaffName}
-                    onChange={(e) => setReportStaffName(e.target.value)}
-                    placeholder="e.g. John Doe"
-                    className="w-full bg-luxury-dark border border-slate-800 text-white rounded-lg px-3 py-2 text-xs focus:border-luxury-gold focus:outline-none transition-colors"
-                  />
-                </div>
-
-                {/* Service Department */}
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Service Department</label>
-                  <input
-                    type="text"
-                    required
-                    value={reportService}
-                    onChange={(e) => setReportService(e.target.value)}
-                    placeholder="e.g. Housekeeping"
-                    className="w-full bg-luxury-dark border border-slate-800 text-white rounded-lg px-3 py-2 text-xs focus:border-luxury-gold focus:outline-none transition-colors"
-                  />
-                </div>
+              {/* Feedback Comments */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Your Comments</label>
+                <textarea
+                  required
+                  rows="4"
+                  value={feedbackComments}
+                  onChange={(e) => setFeedbackComments(e.target.value)}
+                  placeholder="Tell us what you liked, or where we can improve..."
+                  className="w-full bg-luxury-dark border border-slate-800 text-white rounded-lg px-3 py-2 text-xs focus:border-luxury-gold focus:outline-none transition-colors resize-none"
+                />
               </div>
 
               {/* Action Buttons */}
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
-                  onClick={handleReportCancel}
+                  onClick={handleFeedbackCancel}
                   className="px-4 py-2 border border-slate-800 hover:bg-slate-800 rounded-lg text-xs font-semibold text-slate-400 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={reportLoading}
+                  disabled={feedbackLoading}
                   className="px-6 py-2 bg-gradient-to-r from-luxury-gold to-luxury-goldDark text-luxury-navy hover:shadow-lg font-bold rounded-lg text-xs transition-all transform hover:-translate-y-0.5 cursor-pointer disabled:opacity-50"
                 >
-                  {reportLoading ? 'Filing Report...' : 'File Report'}
+                  {feedbackLoading ? 'Submitting...' : 'Submit Feedback'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       </section>
+      </>
+      )}
 
       {/* 11. Footer */}
       <footer className="bg-luxury-navy text-slate-400 py-12 border-t border-slate-800 text-xs px-8 sm:px-16 text-center md:text-left">
@@ -1465,7 +2457,7 @@ const GuestPortal = () => {
                 </div>
                 <h4 className="font-serif text-lg font-bold dark:text-white">Reservation Confirmed!</h4>
                 <p className="text-xs text-slate-400">
-                  Your stay has been recorded in our ledger. Thank you for choosing " MIAMI RESORT ".
+                  Your stay has been recorded in our ledger. Thank you for choosing " THE GRAND ROYAL RESORT ".
                 </p>
               </div>
             ) : bookingStep === 'details' ? (

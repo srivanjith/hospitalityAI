@@ -95,7 +95,7 @@ async function main() {
   // Ensure hotel exists
   let hotel = await db.collection('hotels').findOne();
   if (!hotel) {
-    hotel = await db.collection('hotels').create({ name: 'The Grand Palace Hotel', location: 'Mumbai, Maharashtra', totalRooms: TOTAL_ROOMS });
+    hotel = await db.collection('hotels').create({ name: 'The Grand Royal Resort', location: 'Sathy, Erode, Tamil Nadu', totalRooms: TOTAL_ROOMS });
     console.log('🏨 Created hotel record');
   }
   const hotelId = hotel.id || hotel._id;

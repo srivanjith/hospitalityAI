@@ -13,7 +13,6 @@ import StaffManagement from './pages/StaffManagement';
 import Reports from './pages/Reports';
 import GuestPortal from './pages/GuestPortal';
 import CostOptimization from './pages/CostOptimization';
-import DataSeeder from './pages/DataSeeder';
 
 const AppContent = () => {
   const { user, loading } = useAuth();
@@ -58,8 +57,6 @@ const AppContent = () => {
         return <CostOptimization />;
       case 'reports':
         return <Reports />;
-      case 'seeder':
-        return user.role === 'admin' ? <DataSeeder /> : <Dashboard setCurrentPage={setCurrentPage} />;
       default:
         return <Dashboard setCurrentPage={setCurrentPage} />;
     }
@@ -71,8 +68,7 @@ const AppContent = () => {
     forecasting: 'AI Predictive Forecasting & Shift Optimization',
     staff: 'Employee shift Scheduling & Performance',
     costs: 'Cost Optimization & Labor Analysis',
-    reports: 'Analytical Reports & Auditing',
-    seeder: 'AI Synthetic Data Seeder'
+    reports: 'Analytical Reports & Auditing'
   };
 
   return (

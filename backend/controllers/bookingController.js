@@ -21,7 +21,7 @@ const getDatesRange = (startStr, endStr) => {
 // Helper to update occupancy history for a range of dates
 const adjustOccupancyHistory = async (dates, deltaRooms, deltaGuests, deltaRevenue) => {
   const hotels = await db.collection('hotels').find();
-  const totalRooms = hotels[0]?.totalRooms || 100;
+  const totalRooms = hotels[0]?.totalRooms || 500;
 
   for (const dateStr of dates) {
     let hist = await db.collection('occupancyHistory').findOne({ date: dateStr });
@@ -182,7 +182,7 @@ const getOccupancyAnalytics = async (req, res) => {
     const recent = sorted.slice(-limit);
 
     // Calculate key analytics metrics
-    const totalRooms = 120;
+    const totalRooms = 500;
     let totalOccupiedSum = 0;
     let totalGuestsSum = 0;
     let totalRevenueSum = 0;
@@ -240,7 +240,7 @@ const getOccupancySuggestion = async (req, res) => {
 
     // ── B. ML model forecast for next 7 days ──
     const hotels = await db.collection('hotels').find();
-    const totalRooms = hotels[0]?.totalRooms || 120;
+    const totalRooms = hotels[0]?.totalRooms || 500;
 
     const rawForecasts = await mlService.getForecastRange(todayStr, 7, totalRooms);
 

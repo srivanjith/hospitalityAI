@@ -20,7 +20,9 @@ import {
   Lightbulb,
   BarChart2,
   Target,
-  Calendar
+  Calendar,
+  Star,
+  MessageSquare
 } from 'lucide-react';
 import api from '../services/api';
 import { Line } from 'react-chartjs-2';
@@ -49,9 +51,9 @@ ChartJS.register(
 
 const Dashboard = ({ setCurrentPage }) => {
   const [stats, setStats] = useState({
-    totalRooms: 120,
+    totalRooms: 500,
     occupiedRooms: 0,
-    availableRooms: 120,
+    availableRooms: 500,
     occupancyRate: 0,
     monthlyRevenue: 0,
     staffUtilization: 0
@@ -59,6 +61,7 @@ const Dashboard = ({ setCurrentPage }) => {
   const [forecast7Days, setForecast7Days] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [staffReports, setStaffReports] = useState([]);
+  const [feedbacks, setFeedbacks] = useState([]);
   const [occupancySuggestion, setOccupancySuggestion] = useState(null);
   const [suggestionLoading, setSuggestionLoading] = useState(true);
   const [suggestionError, setSuggestionError] = useState('');
@@ -90,7 +93,7 @@ const Dashboard = ({ setCurrentPage }) => {
           actualStaffScheduled: {}
         };
 
-        const totalRooms = 120;
+        const totalRooms = 500;
         const occupied = todayForecast.roomsOccupied || 0;
         const available = totalRooms - occupied;
         const rate = todayForecast.predictedOccupancy || 0;
@@ -113,6 +116,14 @@ const Dashboard = ({ setCurrentPage }) => {
         try {
           const reports = await api.getStaffReports();
           setStaffReports(reports || []);
+        } catch {
+          // Non-critical
+        }
+
+        // Fetch guest feedbacks
+        try {
+          const feedbacksData = await api.getFeedbacks();
+          setFeedbacks(feedbacksData || []);
         } catch {
           // Non-critical
         }
@@ -607,106 +618,228 @@ const Dashboard = ({ setCurrentPage }) => {
         )}
       </div>
 
-      {/* 4. Guest Staff Reports Panel */}
-      <div className="glass-panel p-6 rounded-2xl shadow-glass">
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-rose-500/10 border border-rose-500/20 rounded-xl">
-              <Flag className="h-5 w-5 text-rose-500" />
+      {/* 4. Bottom Panels - Staff Reports & Feedback */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Guest Staff Reports Panel */}
+        <div className="glass-panel p-6 rounded-2xl shadow-glass flex flex-col h-[400px]">
+          <div className="flex items-center justify-between mb-5 flex-shrink-0">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-rose-500/10 border border-rose-500/20 rounded-xl">
+                <Flag className="h-5 w-5 text-rose-500" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold font-serif dark:text-white">Guest Staff Reports</h3>
+                <p className="text-xs text-slate-400">Complaints submitted by residents about hotel staff</p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-lg font-bold font-serif dark:text-white">Guest Staff Reports</h3>
-              <p className="text-xs text-slate-400">Complaints and feedback submitted by residents about hotel staff</p>
-            </div>
+            {staffReports.length > 0 && (
+              <span className="text-xs font-bold px-3 py-1 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-full">
+                {staffReports.length} {staffReports.length === 1 ? 'report' : 'reports'}
+              </span>
+            )}
           </div>
-          {staffReports.length > 0 && (
-            <span className="text-xs font-bold px-3 py-1 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-full">
-              {staffReports.length} {staffReports.length === 1 ? 'report' : 'reports'}
-            </span>
-          )}
+
+          <div className="flex-1 overflow-y-auto">
+            {staffReports.length === 0 ? (
+              <div className="p-6 border border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center space-x-3 text-sm h-full flex items-center justify-center">
+                <CheckCircle2 className="h-5 w-5 flex-shrink-0" />
+                <span>No staff complaints have been filed by guests.</span>
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-slate-50 dark:bg-luxury-darkCard border-b border-slate-200 dark:border-slate-800">
+                      <th className="text-left px-4 py-3 font-bold text-slate-500 uppercase tracking-wider">
+                        <div className="flex items-center space-x-1.5">
+                          <User className="h-3.5 w-3.5" />
+                          <span>Guest</span>
+                        </div>
+                      </th>
+                      <th className="text-left px-4 py-3 font-bold text-slate-500 uppercase tracking-wider">
+                        <div className="flex items-center space-x-1.5">
+                          <BedDouble className="h-3.5 w-3.5" />
+                          <span>Room</span>
+                        </div>
+                      </th>
+                      <th className="text-left px-4 py-3 font-bold text-slate-500 uppercase tracking-wider">
+                        <div className="flex items-center space-x-1.5">
+                          <MessageSquareWarning className="h-3.5 w-3.5" />
+                          <span>Staff Reported</span>
+                        </div>
+                      </th>
+                      <th className="text-left px-4 py-3 font-bold text-slate-500 uppercase tracking-wider">
+                        <div className="flex items-center space-x-1.5">
+                          <Wrench className="h-3.5 w-3.5" />
+                          <span>Service</span>
+                        </div>
+                      </th>
+                      <th className="text-left px-4 py-3 font-bold text-slate-500 uppercase tracking-wider">
+                        <div className="flex items-center space-x-1.5">
+                          <Clock4 className="h-3.5 w-3.5" />
+                          <span>Submitted</span>
+                        </div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {staffReports.map((report, idx) => (
+                      <tr
+                        key={report._id || report.id || idx}
+                        className="hover:bg-rose-500/3 dark:hover:bg-rose-500/5 transition-colors duration-150"
+                      >
+                        <td className="px-4 py-3 font-semibold dark:text-white">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-6 h-6 rounded-full bg-rose-500/15 flex items-center justify-center text-rose-500 font-bold text-[9px] uppercase flex-shrink-0">
+                              {(report.guestName || 'G')[0]}
+                            </div>
+                            <span className="truncate max-w-[80px]">{report.guestName || '—'}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-slate-600 dark:text-slate-300 font-mono">
+                          #{report.roomNo || '—'}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="px-2.5 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 rounded-full font-semibold">
+                            {report.staffName || '—'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-slate-600 dark:text-slate-300 max-w-[120px] truncate" title={report.service}>
+                          {report.service || '—'}
+                        </td>
+                        <td className="px-4 py-3 text-slate-400 font-mono text-[10px]">
+                          {report.createdAt
+                            ? new Date(report.createdAt).toLocaleString('en-IN', {
+                                dateStyle: 'short',
+                                timeStyle: 'short'
+                              })
+                            : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
 
-        {staffReports.length === 0 ? (
-          <div className="p-6 border border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center space-x-3 text-sm">
-            <CheckCircle2 className="h-5 w-5 flex-shrink-0" />
-            <span>No staff complaints have been filed by guests. All service feedback is positive.</span>
+        {/* Guest Feedback Panel */}
+        <div className="glass-panel p-6 rounded-2xl shadow-glass flex flex-col h-[400px]">
+          <div className="flex items-center justify-between mb-5 flex-shrink-0">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                <MessageSquare className="h-5 w-5 text-amber-500" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold font-serif dark:text-white">Guest Feedback</h3>
+                <p className="text-xs text-slate-400">General service and stay feedback submitted by guests</p>
+              </div>
+            </div>
+            {feedbacks.length > 0 && (
+              <span className="text-xs font-bold px-3 py-1 bg-amber-500/10 text-amber-600 border border-amber-500/20 rounded-full">
+                {feedbacks.length} {feedbacks.length === 1 ? 'feedback' : 'feedbacks'}
+              </span>
+            )}
           </div>
-        ) : (
-          <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="bg-slate-50 dark:bg-luxury-darkCard border-b border-slate-200 dark:border-slate-800">
-                  <th className="text-left px-4 py-3 font-bold text-slate-500 uppercase tracking-wider">
-                    <div className="flex items-center space-x-1.5">
-                      <User className="h-3.5 w-3.5" />
-                      <span>Guest</span>
-                    </div>
-                  </th>
-                  <th className="text-left px-4 py-3 font-bold text-slate-500 uppercase tracking-wider">
-                    <div className="flex items-center space-x-1.5">
-                      <BedDouble className="h-3.5 w-3.5" />
-                      <span>Room</span>
-                    </div>
-                  </th>
-                  <th className="text-left px-4 py-3 font-bold text-slate-500 uppercase tracking-wider">
-                    <div className="flex items-center space-x-1.5">
-                      <MessageSquareWarning className="h-3.5 w-3.5" />
-                      <span>Staff Reported</span>
-                    </div>
-                  </th>
-                  <th className="text-left px-4 py-3 font-bold text-slate-500 uppercase tracking-wider">
-                    <div className="flex items-center space-x-1.5">
-                      <Wrench className="h-3.5 w-3.5" />
-                      <span>Service</span>
-                    </div>
-                  </th>
-                  <th className="text-left px-4 py-3 font-bold text-slate-500 uppercase tracking-wider">
-                    <div className="flex items-center space-x-1.5">
-                      <Clock4 className="h-3.5 w-3.5" />
-                      <span>Submitted</span>
-                    </div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {staffReports.map((report, idx) => (
-                  <tr
-                    key={report._id || report.id || idx}
-                    className="hover:bg-rose-500/3 dark:hover:bg-rose-500/5 transition-colors duration-150"
-                  >
-                    <td className="px-4 py-3 font-semibold dark:text-white">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-6 h-6 rounded-full bg-rose-500/15 flex items-center justify-center text-rose-500 font-bold text-[9px] uppercase flex-shrink-0">
-                          {(report.guestName || 'G')[0]}
+
+          <div className="flex-1 overflow-y-auto">
+            {feedbacks.length === 0 ? (
+              <div className="p-6 border border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center space-x-3 text-sm h-full flex items-center justify-center">
+                <CheckCircle2 className="h-5 w-5 flex-shrink-0" />
+                <span>No guest feedback has been submitted yet.</span>
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-slate-50 dark:bg-luxury-darkCard border-b border-slate-200 dark:border-slate-800">
+                      <th className="text-left px-4 py-3 font-bold text-slate-500 uppercase tracking-wider">
+                        <div className="flex items-center space-x-1.5">
+                          <User className="h-3.5 w-3.5" />
+                          <span>Guest</span>
                         </div>
-                        <span>{report.guestName || '—'}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-slate-600 dark:text-slate-300 font-mono">
-                      #{report.roomNo || '—'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="px-2.5 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 rounded-full font-semibold">
-                        {report.staffName || '—'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-slate-600 dark:text-slate-300 max-w-[180px] truncate">
-                      {report.service || '—'}
-                    </td>
-                    <td className="px-4 py-3 text-slate-400 font-mono text-[10px]">
-                      {report.createdAt
-                        ? new Date(report.createdAt).toLocaleString('en-IN', {
-                            dateStyle: 'short',
-                            timeStyle: 'short'
-                          })
-                        : '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </th>
+                      <th className="text-left px-4 py-3 font-bold text-slate-500 uppercase tracking-wider">
+                        <div className="flex items-center space-x-1.5">
+                          <BedDouble className="h-3.5 w-3.5" />
+                          <span>Room</span>
+                        </div>
+                      </th>
+                      <th className="text-left px-4 py-3 font-bold text-slate-500 uppercase tracking-wider">
+                        <div className="flex items-center space-x-1.5">
+                          <Wrench className="h-3.5 w-3.5" />
+                          <span>Category</span>
+                        </div>
+                      </th>
+                      <th className="text-left px-4 py-3 font-bold text-slate-500 uppercase tracking-wider">
+                        <div className="flex items-center space-x-1.5">
+                          <Star className="h-3.5 w-3.5" />
+                          <span>Rating</span>
+                        </div>
+                      </th>
+                      <th className="text-left px-4 py-3 font-bold text-slate-500 uppercase tracking-wider">
+                        <div className="flex items-center space-x-1.5">
+                          <MessageSquare className="h-3.5 w-3.5" />
+                          <span>Comments</span>
+                        </div>
+                      </th>
+                      <th className="text-left px-4 py-3 font-bold text-slate-500 uppercase tracking-wider">
+                        <div className="flex items-center space-x-1.5">
+                          <Clock4 className="h-3.5 w-3.5" />
+                          <span>Submitted</span>
+                        </div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {feedbacks.map((fb, idx) => (
+                      <tr
+                        key={fb._id || fb.id || idx}
+                        className="hover:bg-amber-500/3 dark:hover:bg-amber-500/5 transition-colors duration-150"
+                      >
+                        <td className="px-4 py-3 font-semibold dark:text-white">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-6 h-6 rounded-full bg-amber-500/15 flex items-center justify-center text-amber-500 font-bold text-[9px] uppercase flex-shrink-0">
+                              {(fb.guestName || 'G')[0]}
+                            </div>
+                            <span className="truncate max-w-[80px]">{fb.guestName || '—'}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-slate-600 dark:text-slate-300 font-mono">
+                          #{fb.roomNo || '—'}
+                        </td>
+                        <td className="px-4 py-3 text-slate-600 dark:text-slate-300 font-semibold">
+                          {fb.category || '—'}
+                        </td>
+                        <td className="px-4 py-3 text-amber-500 font-bold text-xs whitespace-nowrap">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <span key={i} className={i < fb.rating ? "text-amber-400" : "text-slate-300 dark:text-slate-700"}>
+                              ★
+                            </span>
+                          ))}
+                        </td>
+                        <td className="px-4 py-3 text-slate-600 dark:text-slate-300 max-w-[120px] truncate" title={fb.comments}>
+                          {fb.comments || '—'}
+                        </td>
+                        <td className="px-4 py-3 text-slate-400 font-mono text-[10px]">
+                          {fb.createdAt
+                            ? new Date(fb.createdAt).toLocaleString('en-IN', {
+                                dateStyle: 'short',
+                                timeStyle: 'short'
+                              })
+                            : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-        )}
+        </div>
+
       </div>
     </div>
   );
