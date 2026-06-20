@@ -199,6 +199,10 @@ export const sendResetPasswordEmail = async (email, resetLink, toName = 'Valued 
       to_name: toName,
       otp: resetLink,
       otp_code: resetLink,
+      reset_link: resetLink,
+      resetLink: resetLink,
+      link: resetLink,
+      url: resetLink,
       app_name: 'HospitalityAI',
       expiry_minutes: '15'
     }
