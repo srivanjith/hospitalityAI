@@ -299,7 +299,7 @@ const forgotPassword = async (req, res) => {
       { expiresIn: '15m' }
     );
     
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5174';
+    const frontendUrl = (process.env.FRONTEND_URL || 'https://hospitality-ai-sw6v.vercel.app').replace(/\/$/, '');
     const resetLink = `${frontendUrl}/?token=${token}`;
 
     const sent = await sendResetEmail(emailLower, resetLink, user.name);
