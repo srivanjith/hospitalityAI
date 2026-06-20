@@ -44,9 +44,28 @@ const seed = async () => {
           email: 'guest@gmail.com',
           password: guestPass,
           role: 'guest'
+        },
+        {
+          name: 'Sri Ranjith',
+          email: 'srivanjiththangaraj48@gmail.com',
+          password: guestPass,
+          role: 'guest'
         }
       ]);
-      console.log('✅ Users seeded!');
+    }
+
+    // Ensure Sri Ranjith is seeded
+    const sriUser = await db.collection('users').findOne({ email: 'srivanjiththangaraj48@gmail.com' });
+    if (!sriUser) {
+      console.log('🌱 Seeding missing user: srivanjiththangaraj48@gmail.com');
+      const guestPass = await bcrypt.hash('guest123', 10);
+      await db.collection('users').create({
+        name: 'Sri Ranjith',
+        email: 'srivanjiththangaraj48@gmail.com',
+        password: guestPass,
+        role: 'guest'
+      });
+      console.log('✅ Sri Ranjith user seeded!');
     }
 
      const hotelCount = await db.collection('hotels').countDocuments();

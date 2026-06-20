@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import { generateOTP } from '../utils/otpGenerator';
-import { sendOTPEmail } from '../services/emailService';
+import { sendOTPEmail, sendResetPasswordEmail } from '../services/emailService';
 
 const Login = () => {
   const { completeLogin } = useAuth();
@@ -356,13 +356,36 @@ const Login = () => {
     e.preventDefault();
     if (!forgotEmail) return;
     
+    const emailToReset = forgotEmail.toLowerCase().trim();
+    console.log('[Forgot Password] Request submitted for:', emailToReset);
+    
     setForgotLoading(true);
     setForgotStatus(null);
     try {
-      const res = await api.forgotPassword(forgotEmail);
+      const res = await api.forgotPassword(emailToReset);
+      console.log('[Forgot Password] Backend response received:', res);
+      
+      if (res.simulate && res.emailExists) {
+        console.log('[Forgot Password] SMTP not configured in backend. Triggering frontend EmailJS fallback.');
+        try {
+          await sendResetPasswordEmail(emailToReset, res.resetLink);
+          console.log('[Forgot Password] EmailJS reset email sent successfully.');
+        } catch (emailErr) {
+          console.error('[Forgot Password] EmailJS delivery failed:', emailErr);
+          // Don't fail completely if EmailJS fails, print the link as fallback
+          console.log(
+            `%c🔑 HospitalityAI Sandbox Reset Link: ${res.resetLink}`,
+            'background: #0f172a; color: #d4af37; font-size: 14px; font-weight: bold; padding: 10px; border: 1px solid #d4af37; border-radius: 6px;'
+          );
+        }
+      } else if (res.simulate) {
+        console.log('[Forgot Password] Email does not exist in DB, but simulator response received:', res);
+      }
+      
       setForgotStatus({ success: true, message: res.message });
       setForgotEmail('');
     } catch (err) {
+      console.error('[Forgot Password] Error requesting reset:', err);
       setForgotStatus({ success: false, message: err.message || 'Failed to request reset.' });
     } finally {
       setForgotLoading(false);

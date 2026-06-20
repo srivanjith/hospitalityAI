@@ -280,24 +280,45 @@ const forgotPassword = async (req, res) => {
     }
 
     const emailLower = email.toLowerCase().trim();
+    console.log(`[FORGOT PASSWORD] Password reset requested for email: ${emailLower}`);
+
     const user = await db.collection('users').findOne({ email: emailLower });
     
-    if (user) {
-      // Generate short-lived token
-      const token = jwt.sign(
-        { id: user.id || user._id },
-        process.env.JWT_SECRET || 'hospitalityai_secure_token_key_gold_navy_2026',
-        { expiresIn: '15m' }
-      );
-      
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5174';
-      const resetLink = `${frontendUrl}/?token=${token}`;
+    if (!user) {
+      console.log(`[FORGOT PASSWORD] Reset requested for UNREGISTERED email: ${emailLower}`);
+      return res.json({ 
+        message: 'If that email address exists in our database, we have sent a link to reset your password.',
+        emailExists: false
+      });
+    }
 
-      await sendResetEmail(emailLower, resetLink, user.name);
+    // Generate short-lived token
+    const token = jwt.sign(
+      { id: user.id || user._id },
+      process.env.JWT_SECRET || 'hospitalityai_secure_token_key_gold_navy_2026',
+      { expiresIn: '15m' }
+    );
+    
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5174';
+    const resetLink = `${frontendUrl}/?token=${token}`;
+
+    const sent = await sendResetEmail(emailLower, resetLink, user.name);
+
+    if (!sent) {
+      console.log(`[FORGOT PASSWORD] SMTP not configured. Returning reset token to frontend for EmailJS fallback.`);
+      return res.json({
+        message: 'If that email address exists in our database, we have sent a link to reset your password.',
+        emailExists: true,
+        resetLink,
+        token,
+        simulate: true
+      });
     }
 
     return res.json({ 
-      message: 'If that email address exists in our database, we have sent a link to reset your password.' 
+      message: 'If that email address exists in our database, we have sent a link to reset your password.',
+      emailExists: true,
+      simulate: false
     });
   } catch (error) {
     console.error('Forgot Password Error:', error);

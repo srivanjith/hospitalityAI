@@ -149,3 +149,74 @@ export const sendBookingConfirmationEmail = async (email, booking, toName = 'Val
   return true;
 };
 
+const rawResetServiceId = import.meta.env.VITE_EMAILJS_RESET_SERVICE_ID;
+const RESET_SERVICE_ID = (rawResetServiceId && rawResetServiceId.trim() !== '') ? rawResetServiceId.trim() : SERVICE_ID;
+
+const rawResetTemplateId = import.meta.env.VITE_EMAILJS_RESET_TEMPLATE_ID;
+const RESET_TEMPLATE_ID = (rawResetTemplateId && rawResetTemplateId.trim() !== '') ? rawResetTemplateId.trim() : TEMPLATE_ID;
+
+const rawResetPublicKey = import.meta.env.VITE_EMAILJS_RESET_PUBLIC_KEY;
+const RESET_PUBLIC_KEY = (rawResetPublicKey && rawResetPublicKey.trim() !== '') ? rawResetPublicKey.trim() : PUBLIC_KEY;
+
+/**
+ * Sends a password reset email containing the reset link using EmailJS.
+ * Maps reset link to the otp parameter in the template params.
+ * 
+ * @param {string} email - Recipient's email address
+ * @param {string} resetLink - Generated password reset link URL
+ * @param {string} toName - Recipient's name
+ * @returns {Promise<boolean>} True if successful
+ */
+export const sendResetPasswordEmail = async (email, resetLink, toName = 'Valued Guest') => {
+  console.log('[EmailJS Reset] Sending email to:', email, 'using service:', RESET_SERVICE_ID, 'template:', RESET_TEMPLATE_ID, 'key:', RESET_PUBLIC_KEY);
+  const isDefault = 
+    RESET_SERVICE_ID === 'service_default' || 
+    RESET_TEMPLATE_ID === 'template_default' || 
+    RESET_PUBLIC_KEY === 'public_key_default';
+
+  if (isDefault) {
+    console.warn(
+      '⚠️ EmailJS is using default/placeholder credentials. Real email delivery will be skipped.\n' +
+      'To enable actual email sending, configure VITE_EMAILJS_RESET_SERVICE_ID, VITE_EMAILJS_RESET_TEMPLATE_ID, and VITE_EMAILJS_PUBLIC_KEY in your frontend/.env file.'
+    );
+    console.log(
+      `%c🔑 HospitalityAI Sandbox Reset Link: ${resetLink} `,
+      'background: #0f172a; color: #d4af37; font-size: 14px; font-weight: bold; padding: 10px; border: 1px solid #d4af37; border-radius: 6px;'
+    );
+    window.lastResetLink = resetLink;
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    return true;
+  }
+
+  const payload = {
+    service_id: RESET_SERVICE_ID,
+    template_id: RESET_TEMPLATE_ID,
+    user_id: RESET_PUBLIC_KEY,
+    template_params: {
+      to_email: email,
+      email: email,
+      user_email: email,
+      to_name: toName,
+      otp: resetLink,
+      otp_code: resetLink,
+      app_name: 'HospitalityAI',
+      expiry_minutes: '15'
+    }
+  };
+
+  const response = await fetch(EMAILJS_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`EmailJS Reset Delivery Failed: ${errorText || response.statusText}`);
+  }
+
+  console.log(`%c🔑 Reset email sent successfully to ${email}`, 'color: #d4af37; font-weight: bold;');
+  return true;
+};
