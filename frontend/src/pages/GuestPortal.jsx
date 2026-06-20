@@ -2418,9 +2418,9 @@ const GuestPortal = () => {
           <div className="space-y-4">
             <h5 className="font-bold text-white tracking-wider uppercase text-[10px]">Follow Our Luxury Journey</h5>
             <div className="flex justify-center md:justify-start space-x-4">
-              <a href="#" className="hover:text-luxury-gold"><Facebook className="h-4.5 w-4.5" /></a>
-              <a href="#" className="hover:text-luxury-gold"><Twitter className="h-4.5 w-4.5" /></a>
-              <a href="#" className="hover:text-luxury-gold"><Instagram className="h-4.5 w-4.5" /></a>
+              <a href="https://www.facebook.com" target="_blank" rel="noopener noreferrer" className="hover:text-luxury-gold"><Facebook className="h-4.5 w-4.5" /></a>
+              <a href="https://x.com" target="_blank" rel="noopener noreferrer" className="hover:text-luxury-gold"><Twitter className="h-4.5 w-4.5" /></a>
+              <a href="https://www.instagram.com/sri0__6/?utm_source=ig_web_button_share_sheet" target="_blank" rel="noopener noreferrer" className="hover:text-luxury-gold"><Instagram className="h-4.5 w-4.5" /></a>
             </div>
           </div>
         </div>
