@@ -197,6 +197,8 @@ export const sendResetPasswordEmail = async (email, resetLink, toName = 'Valued 
       email: email,
       user_email: email,
       to_name: toName,
+      user_name: toName,
+      title: 'Password Reset',
       otp: resetLink,
       otp_code: resetLink,
       reset_link: resetLink,
