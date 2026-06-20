@@ -117,34 +117,17 @@ const Login = () => {
     
     setIsLoading(true);
     setErrorMsg(null);
-    setOtpError(null);
-    setOtpSuccess(null);
-    setOtpPurpose('login');
 
     try {
       // 1. Verify credentials against backend login endpoint
       const loginData = await api.login(email, password);
       
-      // 2. Credentials valid! Generate secure 6-digit OTP
-      const otpCode = generateOTP();
-      setGeneratedOtp(otpCode);
-      setTempLoginData(loginData);
-      
-      // 3. Dispatch OTP via EmailJS
-      setIsSendingOtp(true);
-      await sendOTPEmail(loginData.email, otpCode, loginData.name);
-      
-      // 4. Transition UI states
-      setOtpTimeRemaining(300); // Reset validity countdown to 5 mins
-      setResendTimer(30);       // Trigger 30s resend cooldown throttle
-      setStep('otp');
-      setOtpInput(['', '', '', '', '', '']);
-      setOtpSuccess('Secure verification code successfully sent to your email.');
+      // 2. Credentials valid! Access granted immediately without OTP
+      completeLogin(loginData);
     } catch (err) {
       setErrorMsg(err.message || 'Verification failed. Please check your credentials.');
     } finally {
       setIsLoading(false);
-      setIsSendingOtp(false);
     }
   };
 
@@ -682,16 +665,16 @@ const Login = () => {
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isLoading || isSendingOtp}
+                disabled={isLoading}
                 className="w-full bg-gradient-to-r from-luxury-gold via-yellow-500 to-luxury-goldDark text-luxury-navy hover:shadow-glow/30 font-bold py-3 px-4 rounded-lg shadow-glow hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 cursor-pointer disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center space-x-2 text-xs uppercase tracking-wider"
               >
-                {isLoading || isSendingOtp ? (
+                {isLoading ? (
                   <>
                     <RefreshCw className="h-4.5 w-4.5 animate-spin text-luxury-navy" />
-                    <span>{isSendingOtp ? 'Sending OTP Security Code...' : 'Verifying Vault Credentials...'}</span>
+                    <span>Verifying Vault Credentials...</span>
                   </>
                 ) : (
-                  <span>Send Verification OTP</span>
+                  <span>Sign In</span>
                 )}
               </button>
 
