@@ -31,6 +31,7 @@ const {
   getUserProfile,
   updateUserProfile,
   forgotPassword,
+  resetPassword,
   checkEmail
 } = require('./controllers/authController');
 
@@ -85,6 +86,7 @@ authRoutes.post('/login', loginUser);
 authRoutes.post('/register', registerUser);
 authRoutes.post('/google-login', googleLogin);
 authRoutes.post('/forgot-password', forgotPassword);
+authRoutes.post('/reset-password', resetPassword);
 authRoutes.post('/check-email', checkEmail);
 authRoutes.get('/profile', protect, getUserProfile);
 authRoutes.put('/profile', protect, updateUserProfile);

@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
 const { db } = require('../config/db');
 
 const generateToken = (id) => {
@@ -214,6 +215,62 @@ const updateUserProfile = async (req, res) => {
   }
 };
 
+const sendResetEmail = async (email, resetLink, name) => {
+  const host = process.env.SMTP_HOST;
+  const port = process.env.SMTP_PORT || 587;
+  const user = process.env.SMTP_USER || process.env.EMAIL_USER;
+  const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
+
+  if (!host || !user || !pass) {
+    console.warn(
+      '⚠️ SMTP configuration not found in backend/.env. Real email delivery will be simulated.'
+    );
+    console.log(
+      `\n==================================================\n` +
+      `🔑 PASSWORD RESET SIMULATION FOR: ${email}\n` +
+      `Reset Link: ${resetLink}\n` +
+      `==================================================\n`
+    );
+    return false;
+  }
+
+  const transporter = nodemailer.createTransport({
+    host,
+    port: Number(port),
+    secure: Number(port) === 465,
+    auth: {
+      user,
+      pass
+    }
+  });
+
+  const mailOptions = {
+    from: `"HospitalityAI" <${user}>`,
+    to: email,
+    subject: 'Reset Your HospitalityAI Password',
+    html: `
+      <div style="font-family: 'Inter', sans-serif; max-width: 600px; margin: 0 auto; background-color: #0c101a; border: 1px solid #1e293b; border-radius: 16px; padding: 32px; color: #f1f5f9;">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <h2 style="font-family: 'Playfair Display', serif; color: #d4af37; margin: 0; font-size: 24px;">HospitalityAI</h2>
+          <p style="color: #64748b; font-size: 11px; text-transform: uppercase; tracking-wider; margin-top: 4px;">Exclusive Resort Management</p>
+        </div>
+        <p style="font-size: 14px; line-height: 1.6; color: #cbd5e1;">Dear ${name || 'Valued Partner'},</p>
+        <p style="font-size: 14px; line-height: 1.6; color: #cbd5e1;">We received a request to reset your account password. If you did not make this request, you can ignore this email safely.</p>
+        <div style="text-align: center; margin: 32px 0;">
+          <a href="${resetLink}" style="background: linear-gradient(135deg, #d4af37 0%, #aa7c11 100%); color: #ffffff; text-decoration: none; padding: 12px 28px; font-size: 12px; font-weight: bold; border-radius: 8px; box-shadow: 0 4px 12px rgba(212, 175, 55, 0.2); display: inline-block;">Change Password</a>
+        </div>
+        <p style="font-size: 12px; color: #64748b; line-height: 1.6;">The link above is valid for 15 minutes. For security, never share this link or copy it to untrusted windows.</p>
+        <hr style="border: 0; border-top: 1px solid #1e293b; margin: 24px 0;" />
+        <p style="font-size: 10px; color: #64748b; text-align: center; margin: 0;">© 2026 The Grand Royal Resort. Sathy, Erode, Tamil Nadu, India.</p>
+      </div>
+    `
+  };
+
+  await transporter.sendMail(mailOptions);
+  console.log(`[SMTP] Password reset email sent successfully to ${email}`);
+  return true;
+};
+
 const forgotPassword = async (req, res) => {
   const { email } = req.body;
 
@@ -222,11 +279,21 @@ const forgotPassword = async (req, res) => {
       return res.status(400).json({ message: 'Please provide an email address' });
     }
 
-    const user = await db.collection('users').findOne({ email: email.toLowerCase().trim() });
+    const emailLower = email.toLowerCase().trim();
+    const user = await db.collection('users').findOne({ email: emailLower });
     
     if (user) {
-      console.log(`[FORGOT PASSWORD] Password reset requested for: ${email}`);
-      console.log(`[FORGOT PASSWORD] Sent password reset link!`);
+      // Generate short-lived token
+      const token = jwt.sign(
+        { id: user.id || user._id },
+        process.env.JWT_SECRET || 'hospitalityai_secure_token_key_gold_navy_2026',
+        { expiresIn: '15m' }
+      );
+      
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5174';
+      const resetLink = `${frontendUrl}/?token=${token}`;
+
+      await sendResetEmail(emailLower, resetLink, user.name);
     }
 
     return res.json({ 
@@ -235,6 +302,44 @@ const forgotPassword = async (req, res) => {
   } catch (error) {
     console.error('Forgot Password Error:', error);
     return res.status(500).json({ message: 'Server error processing password recovery' });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  const { token, password } = req.body;
+
+  try {
+    if (!token || !password) {
+      return res.status(400).json({ message: 'Token and new password are required' });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(
+        token,
+        process.env.JWT_SECRET || 'hospitalityai_secure_token_key_gold_navy_2026'
+      );
+    } catch (err) {
+      return res.status(400).json({ message: 'Password reset link has expired or is invalid. Please request a new one.' });
+    }
+
+    const userId = decoded.id;
+    const user = await db.collection('users').findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User account not found' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await db.collection('users').findByIdAndUpdate(userId, {
+      $set: { password: hashedPassword }
+    });
+
+    console.log(`[RESET PASSWORD] Password updated successfully in database for user ID: ${userId}`);
+
+    return res.json({ message: 'Your password has been successfully updated! You can now log in.' });
+  } catch (error) {
+    console.error('Reset Password Error:', error);
+    return res.status(500).json({ message: 'Server error updating password' });
   }
 };
 
@@ -260,5 +365,6 @@ module.exports = {
   getUserProfile,
   updateUserProfile,
   forgotPassword,
+  resetPassword,
   checkEmail
 };

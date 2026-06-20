@@ -12,7 +12,8 @@ import {
   ArrowLeft,
   Timer,
   CheckCircle,
-  User
+  User,
+  Loader2
 } from 'lucide-react';
 import api from '../services/api';
 import { generateOTP } from '../utils/otpGenerator';
@@ -61,6 +62,22 @@ const Login = () => {
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotStatus, setForgotStatus] = useState(null);
   const [forgotLoading, setForgotLoading] = useState(false);
+
+  // State for Reset Password Flow
+  const [resetToken, setResetToken] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [resetStatus, setResetStatus] = useState(null);
+  const [resetLoading, setResetLoading] = useState(false);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    if (token) {
+      setResetToken(token);
+      setStep('reset');
+    }
+  }, []);
 
   // Handle countdown timers
   useEffect(() => {
@@ -352,6 +369,46 @@ const Login = () => {
     }
   };
 
+  const handleResetPasswordSubmit = async (e) => {
+    e.preventDefault();
+    setResetStatus(null);
+
+    if (!newPassword || !confirmPassword) {
+      setResetStatus({ success: false, message: 'Please enter all fields.' });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setResetStatus({ success: false, message: 'Passwords do not match.' });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setResetStatus({ success: false, message: 'Password must be at least 6 characters long.' });
+      return;
+    }
+
+    setResetLoading(true);
+    try {
+      const res = await api.resetPassword(resetToken, newPassword);
+      setResetStatus({ success: true, message: res.message });
+      setNewPassword('');
+      setConfirmPassword('');
+      
+      // Auto-redirect to credentials view after 3 seconds
+      setTimeout(() => {
+        setResetToken(null);
+        setResetStatus(null);
+        setStep('credentials');
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }, 3000);
+    } catch (err) {
+      setResetStatus({ success: false, message: err.message || 'Failed to update password.' });
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#070a13] font-sans relative overflow-hidden px-4 py-8">
       {/* Background Video */}
@@ -445,10 +502,18 @@ const Login = () => {
           {/* Desktop Form Title */}
           <div className="hidden md:block mb-8">
             <h2 className="text-2xl font-bold font-serif text-white tracking-wide">
-              {step === 'credentials' ? 'Access Control Vault' : step === 'signup' ? 'Create Resident Account' : 'Identity Verification'}
+              {step === 'reset' 
+                ? 'Set New Password' 
+                : step === 'credentials' 
+                ? 'Access Control Vault' 
+                : step === 'signup' 
+                ? 'Create Resident Account' 
+                : 'Identity Verification'}
             </h2>
             <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
-              {step === 'credentials' 
+              {step === 'reset'
+                ? 'Enter and confirm your new account password below'
+                : step === 'credentials' 
                 ? 'Sign in to access your resort administration tools' 
                 : step === 'signup'
                 ? 'Sign up for a resident guest account'
@@ -462,6 +527,82 @@ const Login = () => {
               <HelpCircle className="h-4.5 w-4.5 flex-shrink-0" />
               <span>{errorMsg}</span>
             </div>
+          )}
+
+          {/* Step 0: RESET PASSWORD VIEW */}
+          {step === 'reset' && (
+            <form onSubmit={handleResetPasswordSubmit} className="space-y-4 animate-fade-in">
+              {resetStatus && (
+                <div className={`p-3.5 rounded-lg text-xs border ${
+                  resetStatus.success 
+                    ? 'bg-emerald-950/25 border-emerald-500/20 text-emerald-400' 
+                    : 'bg-red-950/20 border-red-500/20 text-red-400'
+                }`}>
+                  {resetStatus.message}
+                </div>
+              )}
+
+              {/* New Password */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">New Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-3.5 h-4.5 w-4.5 text-slate-500" />
+                  <input
+                    type="password"
+                    required
+                    placeholder="••••••••"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full bg-[#0a0e1a]/60 border border-slate-800/80 text-white rounded-xl pl-11 pr-4 py-3 text-xs focus:border-luxury-gold focus:outline-none transition-all duration-200 focus:shadow-glow/10"
+                  />
+                </div>
+              </div>
+
+              {/* Confirm Password */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Confirm Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-3.5 h-4.5 w-4.5 text-slate-500" />
+                  <input
+                    type="password"
+                    required
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full bg-[#0a0e1a]/60 border border-slate-800/80 text-white rounded-xl pl-11 pr-4 py-3 text-xs focus:border-luxury-gold focus:outline-none transition-all duration-200 focus:shadow-glow/10"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={resetLoading}
+                className="w-full bg-gradient-to-r from-luxury-gold to-[#aa7c11] hover:from-luxury-goldLight hover:to-[#c59b27] text-white py-3 rounded-xl text-xs font-bold transition-all duration-200 hover:shadow-glow/20 disabled:opacity-50 cursor-pointer flex items-center justify-center space-x-2"
+              >
+                {resetLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    <span>Updating Password...</span>
+                  </>
+                ) : (
+                  <span>Update Password</span>
+                )}
+              </button>
+
+              <div className="text-center pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResetToken(null);
+                    setStep('credentials');
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                  }}
+                  className="text-xs text-slate-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  Back to Login
+                </button>
+              </div>
+            </form>
           )}
 
           {/* Step 1: CREDENTIALS VIEW */}
