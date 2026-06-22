@@ -14,6 +14,21 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Database connection & seed middleware for Serverless environment
+let isInitialized = false;
+app.use(async (req, res, next) => {
+  if (!isInitialized) {
+    try {
+      await connectDB();
+      await seed();
+      isInitialized = true;
+    } catch (err) {
+      console.error('Lazy database initialization failed:', err);
+    }
+  }
+  next();
+});
+
 // Routes declarations
 const authRoutes = express.Router();
 const bookingRoutes = express.Router();
@@ -141,38 +156,40 @@ app.get('/', (req, res) => {
   res.send('HospitalityAI Server API is running...');
 });
 
-// Start Server & DB connection
-const PORT = process.env.PORT || 5005;
+// Start Server (only if running locally / not in a Vercel environment)
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+  const PORT = process.env.PORT || 5005;
+  const startServer = async () => {
+    try {
+      // 1. Establish database connection (or fallback)
+      await connectDB();
+      
+      // 2. Perform seed check and pre-population
+      await seed();
 
-const startServer = async () => {
-  try {
-    // 1. Establish database connection (or fallback)
-    await connectDB();
-    
-    // 2. Perform seed check and pre-population
-    await seed();
+      // 3. Listen to port
+      const server = app.listen(PORT, () => {
+        console.log(`🚀 HospitalityAI Backend Server running on port ${PORT}`);
+      });
 
-    // 3. Listen to port
-    const server = app.listen(PORT, () => {
-      console.log(`🚀 HospitalityAI Backend Server running on port ${PORT}`);
-    });
+      // Graceful EADDRINUSE handler — exits cleanly so nodemon can retry
+      server.on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+          console.error(`⚠️  Port ${PORT} is in use. Kill the old process and nodemon will restart.`);
+          process.exit(1);
+        } else {
+          throw err;
+        }
+      });
+    } catch (error) {
+      console.error('Server boot failed:', error);
+      process.exit(1);
+    }
+  };
+  startServer();
+}
 
-    // Graceful EADDRINUSE handler — exits cleanly so nodemon can retry
-    server.on('error', (err) => {
-      if (err.code === 'EADDRINUSE') {
-        console.error(`⚠️  Port ${PORT} is in use. Kill the old process and nodemon will restart.`);
-        process.exit(1);
-      } else {
-        throw err;
-      }
-    });
-  } catch (error) {
-    console.error('Server boot failed:', error);
-    process.exit(1);
-  }
-};
-
-startServer();
+module.exports = app;
 
 
 

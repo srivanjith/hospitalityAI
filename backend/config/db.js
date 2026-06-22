@@ -130,39 +130,51 @@ function formatDoc(doc) {
   return formatted;
 }
 
+let connectionPromise = null;
+
 const connectDB = async () => {
-  const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/hospitalityAI';
-  
-  if (!process.env.MONGO_URI) {
-    console.log('⚠️ MONGO_URI not found in env. Attempting connection to local default mongodb...');
+  if (connectionPromise) {
+    return connectionPromise;
   }
 
-  try {
-    mongoClient = new MongoClient(mongoUri, {
-      serverSelectionTimeoutMS: 3000
-    });
-    await mongoClient.connect();
+  connectionPromise = (async () => {
+    const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/hospitalityAI';
     
-    // Safely extract database name from MongoDB URI
-    let dbName = 'hospitalityAI';
-    const match = mongoUri.match(/\/([a-zA-Z0-9_-]+)(?:\?.*)?$/);
-    if (match && match[1]) {
-      dbName = match[1];
+    if (!process.env.MONGO_URI) {
+      console.log('⚠️ MONGO_URI not found in env. Attempting connection to local default mongodb...');
     }
-    
-    dbInstance = mongoClient.db(dbName);
-    console.log(`✅ MongoDB Connected successfully to database: "${dbName}"`);
-    useMongoDB = true;
-  } catch (err) {
-    console.log(`⚠️ MongoDB connection failed: ${err.message}. Falling back to local JSON database.`);
-    useMongoDB = false;
-  }
+
+    try {
+      mongoClient = new MongoClient(mongoUri, {
+        serverSelectionTimeoutMS: 3000
+      });
+      await mongoClient.connect();
+      
+      let dbName = 'hospitalityAI';
+      const match = mongoUri.match(/\/([a-zA-Z0-9_-]+)(?:\?.*)?$/);
+      if (match && match[1]) {
+        dbName = match[1];
+      }
+      
+      dbInstance = mongoClient.db(dbName);
+      console.log(`✅ MongoDB Connected successfully to database: "${dbName}"`);
+      useMongoDB = true;
+    } catch (err) {
+      console.log(`⚠️ MongoDB connection failed: ${err.message}. Falling back to local JSON database.`);
+      useMongoDB = false;
+    }
+  })();
+
+  return connectionPromise;
 };
 
 const disconnectDB = async () => {
   if (useMongoDB && mongoClient) {
     await mongoClient.close();
     console.log('🔌 Closed MongoDB connection.');
+    useMongoDB = false;
+    connectionPromise = null;
+    dbInstance = null;
   }
 };
 
