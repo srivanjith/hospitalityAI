@@ -1,5 +1,11 @@
-const { Sequelize, DataTypes, Op } = require('sequelize');
-const mysql = require('mysql2/promise');
+const dns = require('dns');
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch (e) {
+  console.warn('⚠️ Could not set custom DNS servers:', e.message);
+}
+
+const { MongoClient, ObjectId } = require('mongodb');
 const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
@@ -7,8 +13,9 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const DB_DIR = path.join(__dirname, '..', 'data', 'db');
-let useMySQL = false;
-let sequelize;
+let useMongoDB = false;
+let mongoClient;
+let dbInstance;
 
 if (!fs.existsSync(DB_DIR)) {
   fs.mkdirSync(DB_DIR, { recursive: true });
@@ -64,245 +71,110 @@ const jsonDb = {
   }
 };
 
-const Models = {};
+// Helper to check if a string is a valid ObjectId
+function toObjectId(id) {
+  if (!id) return id;
+  if (id instanceof ObjectId) return id;
+  if (typeof id === 'string' && id.length === 24 && /^[0-9a-fA-F]{24}$/.test(id)) {
+    try {
+      return new ObjectId(id);
+    } catch (e) {
+      return id;
+    }
+  }
+  return id;
+}
 
-// Helper to map MongoDB operators to Sequelize operators
-function translateQuery(query) {
+// Convert Mongoose/generic queries to MongoDB-compatible formats (casting id to _id and string ID to ObjectId)
+function normalizeQuery(query) {
   if (!query) return {};
-  const where = {};
+  const normalized = {};
   for (const key in query) {
+    let val = query[key];
     let targetKey = key;
-    if (key === '_id') {
-      targetKey = 'id';
+    if (key === 'id') {
+      targetKey = '_id';
     }
-    const val = query[key];
-    if (val && typeof val === 'object' && !Array.isArray(val)) {
-      const fieldOperators = {};
-      for (const op in val) {
-        if (op === '$gte') fieldOperators[Op.gte] = val[op];
-        else if (op === '$lte') fieldOperators[Op.lte] = val[op];
-        else if (op === '$gt') fieldOperators[Op.gt] = val[op];
-        else if (op === '$lt') fieldOperators[Op.lt] = val[op];
-        else if (op === '$in') fieldOperators[Op.in] = val[op];
-        else if (op === '$ne') fieldOperators[Op.ne] = val[op];
-        else fieldOperators[op] = val[op];
+    
+    if (targetKey === '_id') {
+      if (typeof val === 'string') {
+        val = toObjectId(val);
+      } else if (val && typeof val === 'object' && !Array.isArray(val)) {
+        const normalizedVal = {};
+        for (const op in val) {
+          if (op === '$in' && Array.isArray(val[op])) {
+            normalizedVal[op] = val[op].map(v => typeof v === 'string' ? toObjectId(v) : v);
+          } else if (op === '$ne') {
+            normalizedVal[op] = typeof val[op] === 'string' ? toObjectId(val[op]) : val[op];
+          } else {
+            normalizedVal[op] = val[op];
+          }
+        }
+        val = normalizedVal;
       }
-      where[targetKey] = fieldOperators;
-    } else {
-      where[targetKey] = val;
     }
+    normalized[targetKey] = val;
   }
-  return where;
+  return normalized;
 }
 
-// Helper to extract fields from Mongoose style updates
-function translateUpdate(update) {
-  if (!update) return {};
-  if (update.$set) {
-    return { ...update.$set };
-  }
-  return update;
-}
-
-// Format document output to ensure it matches mongo layout (having both id and _id)
+// Format document output to ensure it matches mongo layout (having both id and _id as strings)
 function formatDoc(doc) {
   if (!doc) return null;
-  const plain = typeof doc.toJSON === 'function' ? doc.toJSON() : doc;
-  return {
-    ...plain,
-    id: plain.id,
-    _id: plain.id
-  };
+  const formatted = { ...doc };
+  if (formatted._id) {
+    const idStr = formatted._id.toString();
+    formatted._id = idStr;
+    formatted.id = idStr;
+  }
+  return formatted;
 }
 
-const defineModels = () => {
-  Models.users = sequelize.define('users', {
-    id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
-    name: { type: DataTypes.STRING, allowNull: false },
-    email: { type: DataTypes.STRING, allowNull: false, unique: true },
-    password: { type: DataTypes.STRING, allowNull: false },
-    role: { type: DataTypes.ENUM('admin', 'manager', 'guest'), defaultValue: 'manager' },
-    phone: { type: DataTypes.STRING, allowNull: true },
-    address: { type: DataTypes.STRING, allowNull: true },
-    preferredRoom: { type: DataTypes.STRING, allowNull: true },
-    specialRequests: { type: DataTypes.TEXT, allowNull: true },
-    isGoogleLogin: { type: DataTypes.BOOLEAN, defaultValue: false },
-    profilePicture: { type: DataTypes.TEXT, allowNull: true },
-    gender: { type: DataTypes.STRING, allowNull: true },
-    dob: { type: DataTypes.STRING, allowNull: true },
-    city: { type: DataTypes.STRING, allowNull: true },
-    state: { type: DataTypes.STRING, allowNull: true },
-    country: { type: DataTypes.STRING, allowNull: true },
-    pincode: { type: DataTypes.STRING, allowNull: true }
-  });
-
-  Models.hotels = sequelize.define('hotels', {
-    id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
-    name: { type: DataTypes.STRING, allowNull: false },
-    location: { type: DataTypes.STRING, allowNull: false },
-    totalRooms: { type: DataTypes.INTEGER, allowNull: false }
-  });
-
-  Models.bookings = sequelize.define('bookings', {
-    id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
-    hotelId: { type: DataTypes.STRING, allowNull: false },
-    guestName: { type: DataTypes.STRING, allowNull: false },
-    roomType: { type: DataTypes.STRING, allowNull: false },
-    checkIn: { type: DataTypes.DATE, allowNull: false },
-    checkOut: { type: DataTypes.DATE, allowNull: false },
-    checkInTime: { type: DataTypes.STRING, defaultValue: '14:00' },
-    checkOutTime: { type: DataTypes.STRING, defaultValue: '12:00' },
-    guestsCount: { type: DataTypes.INTEGER, allowNull: false },
-    status: { type: DataTypes.ENUM('booked', 'checked-in', 'checked-out', 'cancelled'), defaultValue: 'booked' },
-    revenue: { type: DataTypes.FLOAT, defaultValue: 0 }
-  });
-
-  Models.occupancyHistory = sequelize.define('occupancyHistory', {
-    id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
-    date: { type: DataTypes.STRING, allowNull: false },
-    occupancyPercentage: { type: DataTypes.FLOAT, allowNull: false },
-    guestCount: { type: DataTypes.INTEGER, allowNull: false },
-    roomsOccupied: { type: DataTypes.INTEGER, allowNull: false },
-    revenue: { type: DataTypes.FLOAT, defaultValue: 0 }
-  }, {
-    tableName: 'occupancyHistory'
-  });
-
-  Models.employees = sequelize.define('employees', {
-    id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
-    name: { type: DataTypes.STRING, allowNull: false },
-    email: { type: DataTypes.STRING, allowNull: false },
-    department: { type: DataTypes.STRING, allowNull: false },
-    shift: { type: DataTypes.STRING, allowNull: false },
-    salary: { type: DataTypes.FLOAT, allowNull: false },
-    attendance: { type: DataTypes.JSON, defaultValue: [] },
-    performance: { type: DataTypes.FLOAT, defaultValue: 5.0 },
-    status: { type: DataTypes.STRING, defaultValue: 'active' }
-  });
-
-  Models.recommendations = sequelize.define('recommendations', {
-    id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
-    date: { type: DataTypes.STRING, allowNull: false },
-    predictedOccupancy: { type: DataTypes.FLOAT, allowNull: false },
-    predictedGuests: { type: DataTypes.FLOAT, allowNull: false },
-    recommendedStaff: { type: DataTypes.JSON },
-    actualStaffScheduled: { type: DataTypes.JSON },
-    optimized: { type: DataTypes.BOOLEAN, defaultValue: false },
-    insights: { type: DataTypes.JSON }
-  });
-
-  Models.notifications = sequelize.define('notifications', {
-    id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
-    type: { type: DataTypes.STRING, allowNull: false },
-    title: { type: DataTypes.STRING, allowNull: false },
-    message: { type: DataTypes.STRING, allowNull: false },
-    date: { type: DataTypes.STRING, allowNull: false },
-    read: { type: DataTypes.BOOLEAN, defaultValue: false }
-  });
-
-  Models.staffReports = sequelize.define('staffReports', {
-    id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
-    guestName: { type: DataTypes.STRING, allowNull: false },
-    roomNo: { type: DataTypes.STRING, allowNull: false },
-    staffName: { type: DataTypes.STRING, allowNull: false },
-    service: { type: DataTypes.STRING, allowNull: false }
-  }, {
-    tableName: 'staffReports'
-  });
-
-  Models.feedbacks = sequelize.define('feedbacks', {
-    id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
-    guestName: { type: DataTypes.STRING, allowNull: false },
-    roomNo: { type: DataTypes.STRING, allowNull: false },
-    category: { type: DataTypes.STRING, allowNull: false },
-    rating: { type: DataTypes.INTEGER, allowNull: false },
-    comments: { type: DataTypes.TEXT, allowNull: false }
-  }, {
-    tableName: 'feedbacks'
-  });
-};
-
 const connectDB = async () => {
-  const mysqlUri = process.env.MYSQL_URI;
-  const mysqlHost = process.env.MYSQL_HOST;
+  const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/hospitalityAI';
   
-  if (!mysqlUri && !mysqlHost) {
-    console.log('⚠️ MySQL configuration not found in env. Falling back to local JSON database.');
-    useMySQL = false;
-    return;
+  if (!process.env.MONGO_URI) {
+    console.log('⚠️ MONGO_URI not found in env. Attempting connection to local default mongodb...');
   }
 
   try {
-    const dbName = process.env.MYSQL_DATABASE || 'hospitalityAI';
-
-    // Programmatically create/verify the database if connecting using separate config
-    if (!mysqlUri) {
-      const connection = await mysql.createConnection({
-        host: mysqlHost,
-        port: process.env.MYSQL_PORT || 3306,
-        user: process.env.MYSQL_USER || 'root',
-        password: process.env.MYSQL_PASSWORD || '',
-        connectTimeout: 3000
-      });
-      await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\`;`);
-      await connection.end();
-      console.log(`✅ Database "${dbName}" created or verified.`);
+    mongoClient = new MongoClient(mongoUri, {
+      serverSelectionTimeoutMS: 3000
+    });
+    await mongoClient.connect();
+    
+    // Safely extract database name from MongoDB URI
+    let dbName = 'hospitalityAI';
+    const match = mongoUri.match(/\/([a-zA-Z0-9_-]+)(?:\?.*)?$/);
+    if (match && match[1]) {
+      dbName = match[1];
     }
-
-    if (mysqlUri) {
-      sequelize = new Sequelize(mysqlUri, {
-        logging: false,
-        dialectOptions: {
-          connectTimeout: 3000
-        }
-      });
-    } else {
-      sequelize = new Sequelize(
-        dbName,
-        process.env.MYSQL_USER || 'root',
-        process.env.MYSQL_PASSWORD || '',
-        {
-          host: mysqlHost,
-          dialect: 'mysql',
-          port: process.env.MYSQL_PORT || 3306,
-          logging: false,
-          dialectOptions: {
-            connectTimeout: 3000
-          }
-        }
-      );
-    }
-
-    await sequelize.authenticate();
-    console.log('✅ MySQL Connected successfully!');
-    useMySQL = true;
-
-    defineModels();
-    await sequelize.sync({ alter: true });
-    console.log('✅ MySQL Tables synced successfully!');
-
+    
+    dbInstance = mongoClient.db(dbName);
+    console.log(`✅ MongoDB Connected successfully to database: "${dbName}"`);
+    useMongoDB = true;
   } catch (err) {
-    console.log(`⚠️ MySQL connection failed: ${err.message}. Falling back to local JSON database.`);
-    useMySQL = false;
+    console.log(`⚠️ MongoDB connection failed: ${err.message}. Falling back to local JSON database.`);
+    useMongoDB = false;
   }
 };
 
 const disconnectDB = async () => {
-  if (useMySQL && sequelize) {
-    await sequelize.close();
-    console.log('🔌 Closed MySQL connection.');
+  if (useMongoDB && mongoClient) {
+    await mongoClient.close();
+    console.log('🔌 Closed MongoDB connection.');
   }
 };
 
 // Universal Repository Wrapper
 const db = {
-  isFallback: () => !useMySQL,
+  isFallback: () => !useMongoDB,
   collection(name) {
     return {
       async find(query = {}) {
-        if (useMySQL) {
-          const where = translateQuery(query);
-          const results = await Models[name].findAll({ where });
+        if (useMongoDB) {
+          const normalized = normalizeQuery(query);
+          const results = await dbInstance.collection(name).find(normalized).toArray();
           return results.map(doc => formatDoc(doc));
         } else {
           const items = jsonDb.read(name);
@@ -311,9 +183,9 @@ const db = {
       },
 
       async findOne(query = {}) {
-        if (useMySQL) {
-          const where = translateQuery(query);
-          const doc = await Models[name].findOne({ where });
+        if (useMongoDB) {
+          const normalized = normalizeQuery(query);
+          const doc = await dbInstance.collection(name).findOne(normalized);
           return formatDoc(doc);
         } else {
           const items = jsonDb.read(name);
@@ -323,8 +195,8 @@ const db = {
       },
 
       async findById(id) {
-        if (useMySQL) {
-          const doc = await Models[name].findByPk(id);
+        if (useMongoDB) {
+          const doc = await dbInstance.collection(name).findOne({ _id: toObjectId(id) });
           return formatDoc(doc);
         } else {
           const items = jsonDb.read(name);
@@ -334,17 +206,27 @@ const db = {
       },
 
       async create(doc) {
-        if (useMySQL) {
+        if (useMongoDB) {
           const payload = { ...doc };
-          if (payload._id && !payload.id) payload.id = payload._id;
-          const created = await Models[name].create(payload);
+          if (payload.id && !payload._id) {
+            payload._id = toObjectId(payload.id);
+            delete payload.id;
+          } else if (payload._id) {
+            payload._id = toObjectId(payload._id);
+          }
+          if (!payload.createdAt) payload.createdAt = new Date().toISOString();
+          if (!payload.updatedAt) payload.updatedAt = new Date().toISOString();
+          
+          const result = await dbInstance.collection(name).insertOne(payload);
+          const created = await dbInstance.collection(name).findOne({ _id: result.insertedId });
           return formatDoc(created);
         } else {
           const items = jsonDb.read(name);
+          const newId = Math.random().toString(36).substring(2, 11);
           const newDoc = {
             ...doc,
-            _id: Math.random().toString(36).substring(2, 11),
-            id: Math.random().toString(36).substring(2, 11),
+            _id: newId,
+            id: newId,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           };
@@ -355,23 +237,36 @@ const db = {
       },
 
       async insertMany(docs) {
-        if (useMySQL) {
+        if (useMongoDB) {
+          if (!docs || docs.length === 0) return [];
           const payloads = docs.map(doc => {
             const payload = { ...doc };
-            if (payload._id && !payload.id) payload.id = payload._id;
+            if (payload.id && !payload._id) {
+              payload._id = toObjectId(payload.id);
+              delete payload.id;
+            } else if (payload._id) {
+              payload._id = toObjectId(payload._id);
+            }
+            if (!payload.createdAt) payload.createdAt = new Date().toISOString();
+            if (!payload.updatedAt) payload.updatedAt = new Date().toISOString();
             return payload;
           });
-          const created = await Models[name].bulkCreate(payloads);
+          const result = await dbInstance.collection(name).insertMany(payloads);
+          const insertedIds = Object.values(result.insertedIds);
+          const created = await dbInstance.collection(name).find({ _id: { $in: insertedIds } }).toArray();
           return created.map(doc => formatDoc(doc));
         } else {
           const items = jsonDb.read(name);
-          const newDocs = docs.map(doc => ({
-            ...doc,
-            _id: Math.random().toString(36).substring(2, 11),
-            id: Math.random().toString(36).substring(2, 11),
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          }));
+          const newDocs = docs.map(doc => {
+            const newId = Math.random().toString(36).substring(2, 11);
+            return {
+              ...doc,
+              _id: newId,
+              id: newId,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            };
+          });
           items.push(...newDocs);
           jsonDb.write(name, items);
           return newDocs;
@@ -379,14 +274,16 @@ const db = {
       },
 
       async updateOne(query, update) {
-        if (useMySQL) {
-          const where = translateQuery(query);
-          const values = translateUpdate(update);
-          const [affectedCount] = await Models[name].update(values, {
-            where,
-            limit: 1
-          });
-          return { matchedCount: affectedCount, modifiedCount: affectedCount };
+        if (useMongoDB) {
+          const normalized = normalizeQuery(query);
+          const updatePayload = (update.$set || update.$unset || update.$push || update.$pull || update.$inc) ? update : { $set: update };
+          if (updatePayload.$set) {
+            updatePayload.$set.updatedAt = new Date().toISOString();
+          } else {
+            updatePayload.$set = { updatedAt: new Date().toISOString() };
+          }
+          const result = await dbInstance.collection(name).updateOne(normalized, updatePayload);
+          return { matchedCount: result.matchedCount, modifiedCount: result.modifiedCount };
         } else {
           const items = jsonDb.read(name);
           const idx = items.findIndex(item => jsonDb.match(item, query));
@@ -408,11 +305,16 @@ const db = {
       },
 
       async updateMany(query, update) {
-        if (useMySQL) {
-          const where = translateQuery(query);
-          const values = translateUpdate(update);
-          const [affectedCount] = await Models[name].update(values, { where });
-          return { matchedCount: affectedCount, modifiedCount: affectedCount };
+        if (useMongoDB) {
+          const normalized = normalizeQuery(query);
+          const updatePayload = (update.$set || update.$unset || update.$push || update.$pull || update.$inc) ? update : { $set: update };
+          if (updatePayload.$set) {
+            updatePayload.$set.updatedAt = new Date().toISOString();
+          } else {
+            updatePayload.$set = { updatedAt: new Date().toISOString() };
+          }
+          const result = await dbInstance.collection(name).updateMany(normalized, updatePayload);
+          return { matchedCount: result.matchedCount, modifiedCount: result.modifiedCount };
         } else {
           const items = jsonDb.read(name);
           let modifiedCount = 0;
@@ -438,14 +340,24 @@ const db = {
       },
 
       async findByIdAndUpdate(id, update, options = {}) {
-        if (useMySQL) {
-          const values = translateUpdate(update);
-          const instance = await Models[name].findByPk(id);
-          if (instance) {
-            await instance.update(values);
-            return formatDoc(instance);
+        if (useMongoDB) {
+          const normalizedQuery = { _id: toObjectId(id) };
+          const updatePayload = (update.$set || update.$unset || update.$push || update.$pull || update.$inc) ? update : { $set: update };
+          if (updatePayload.$set) {
+            updatePayload.$set.updatedAt = new Date().toISOString();
+          } else {
+            updatePayload.$set = { updatedAt: new Date().toISOString() };
           }
-          return null;
+          const result = await dbInstance.collection(name).findOneAndUpdate(
+            normalizedQuery,
+            updatePayload,
+            { returnDocument: 'after' }
+          );
+          let doc = result;
+          if (result && typeof result === 'object' && 'value' in result) {
+            doc = result.value;
+          }
+          return formatDoc(doc);
         } else {
           const items = jsonDb.read(name);
           const idx = items.findIndex(item => item._id === id || item.id === id);
@@ -466,10 +378,10 @@ const db = {
       },
 
       async deleteOne(query) {
-        if (useMySQL) {
-          const where = translateQuery(query);
-          const deletedCount = await Models[name].destroy({ where, limit: 1 });
-          return { deletedCount };
+        if (useMongoDB) {
+          const normalized = normalizeQuery(query);
+          const result = await dbInstance.collection(name).deleteOne(normalized);
+          return { deletedCount: result.deletedCount };
         } else {
           const items = jsonDb.read(name);
           const idx = items.findIndex(item => jsonDb.match(item, query));
@@ -483,10 +395,10 @@ const db = {
       },
 
       async deleteMany(query = {}) {
-        if (useMySQL) {
-          const where = translateQuery(query);
-          const deletedCount = await Models[name].destroy({ where });
-          return { deletedCount };
+        if (useMongoDB) {
+          const normalized = normalizeQuery(query);
+          const result = await dbInstance.collection(name).deleteMany(normalized);
+          return { deletedCount: result.deletedCount };
         } else {
           const items = jsonDb.read(name);
           const initialCount = items.length;
@@ -497,9 +409,9 @@ const db = {
       },
 
       async countDocuments(query = {}) {
-        if (useMySQL) {
-          const where = translateQuery(query);
-          return await Models[name].count({ where });
+        if (useMongoDB) {
+          const normalized = normalizeQuery(query);
+          return await dbInstance.collection(name).countDocuments(normalized);
         } else {
           const items = jsonDb.read(name);
           return items.filter(item => jsonDb.match(item, query)).length;

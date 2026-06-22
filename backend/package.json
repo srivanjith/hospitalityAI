@@ -15,9 +15,8 @@
     "express": "^4.19.2",
     "groq-sdk": "^1.2.1",
     "jsonwebtoken": "^9.0.2",
-    "mysql2": "^3.22.5",
-    "nodemailer": "^9.0.1",
-    "sequelize": "^6.37.8"
+    "mongodb": "^7.3.0",
+    "nodemailer": "^9.0.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
