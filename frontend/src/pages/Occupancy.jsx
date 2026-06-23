@@ -403,10 +403,10 @@ const Occupancy = () => {
                     onChange={(e) => setRoomType(e.target.value)}
                     className="w-full bg-white dark:bg-luxury-dark border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white focus:border-luxury-gold focus:outline-none"
                   >
-                    <option value="Standard Room">Standard Room (₹120/nt)</option>
-                    <option value="Deluxe Room">Deluxe Room (₹180/nt)</option>
-                    <option value="Executive Suite">Executive Suite (₹280/nt)</option>
-                    <option value="Presidential Suite">Presidential Suite (₹450/nt)</option>
+                    <option value="Standard Room">Standard Room (₹12000/nt)</option>
+                    <option value="Deluxe Room">Deluxe Room (₹18000/nt)</option>
+                    <option value="Executive Suite">Executive Suite (₹28000/nt)</option>
+                    <option value="Presidential Suite">Presidential Suite (₹45000/nt)</option>
                   </select>
                 </div>
 
