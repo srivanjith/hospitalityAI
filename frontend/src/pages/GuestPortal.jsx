@@ -420,10 +420,10 @@ const GuestPortal = () => {
 
   useEffect(() => {
     setActiveImageIdx(0);
-    if (selectedRoomShowcase && selectedCategoryPage) {
+    if (selectedRoomShowcase) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }, [selectedRoomShowcase, selectedCategoryPage]);
+  }, [selectedRoomShowcase]);
 
   const handleOpenBooking = (type) => {
     setRoomType(type);
