@@ -1,4 +1,11 @@
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5005/api';
+let rawBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5005/api';
+if (rawBaseUrl.endsWith('/')) {
+  rawBaseUrl = rawBaseUrl.slice(0, -1);
+}
+if (!rawBaseUrl.endsWith('/api')) {
+  rawBaseUrl = `${rawBaseUrl}/api`;
+}
+const BASE_URL = rawBaseUrl;
 
 const getHeaders = () => {
   const token = localStorage.getItem('token');
