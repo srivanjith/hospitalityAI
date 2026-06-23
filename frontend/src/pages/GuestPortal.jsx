@@ -1110,7 +1110,13 @@ const GuestPortal = () => {
         </div>
       </div>
 
-      {selectedCategoryPage ? (
+      {selectedRoomShowcase && !selectedCategoryPage ? (
+        <div className="min-h-screen bg-luxury-cream dark:bg-luxury-dark pt-28 pb-20 px-8 sm:px-16 flex-1 animate-fade-in">
+          <div className="max-w-6xl mx-auto">
+            {renderRoomShowcase(selectedRoomShowcase)}
+          </div>
+        </div>
+      ) : selectedCategoryPage ? (
         <div className="pt-0 flex-1 animate-fade-in">
           {renderCategoryPage(selectedCategoryPage)}
         </div>
