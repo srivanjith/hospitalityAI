@@ -292,10 +292,11 @@ const forgotPassword = async (req, res) => {
       });
     }
 
-    // Generate short-lived token
+    // Generate short-lived token using dynamic secret containing current password hash
+    const secret = (process.env.JWT_SECRET || 'hospitalityai_secure_token_key_gold_navy_2026') + user.password;
     const token = jwt.sign(
       { id: user.id || user._id },
-      process.env.JWT_SECRET || 'hospitalityai_secure_token_key_gold_navy_2026',
+      secret,
       { expiresIn: '15m' }
     );
     
@@ -336,11 +337,12 @@ const resetPassword = async (req, res) => {
 
     let decoded;
     try {
-      decoded = jwt.verify(
-        token,
-        process.env.JWT_SECRET || 'hospitalityai_secure_token_key_gold_navy_2026'
-      );
+      decoded = jwt.decode(token);
     } catch (err) {
+      return res.status(400).json({ message: 'Password reset link has expired or is invalid. Please request a new one.' });
+    }
+
+    if (!decoded || !decoded.id) {
       return res.status(400).json({ message: 'Password reset link has expired or is invalid. Please request a new one.' });
     }
 
@@ -348,6 +350,14 @@ const resetPassword = async (req, res) => {
     const user = await db.collection('users').findById(userId);
     if (!user) {
       return res.status(404).json({ message: 'User account not found' });
+    }
+
+    // Verify token using the dynamic secret containing the user's password hash
+    const secret = (process.env.JWT_SECRET || 'hospitalityai_secure_token_key_gold_navy_2026') + user.password;
+    try {
+      jwt.verify(token, secret);
+    } catch (err) {
+      return res.status(400).json({ message: 'Password reset link has expired or is invalid. Please request a new one.' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
