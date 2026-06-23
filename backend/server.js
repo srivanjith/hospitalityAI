@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const { connectDB } = require('./config/db');
+const { connectDB, db } = require('./config/db');
 const { seed } = require('./data/seedData');
 
 // Load env variables
@@ -150,6 +150,15 @@ app.use('/api/forecasts', forecastRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/feedback', feedbackRoutes);
+
+app.get('/api/db-status', (req, res) => {
+  res.json({
+    useMongoDB: !db.isFallback(),
+    mongoUriConfigured: !!process.env.MONGO_URI,
+    env: process.env.NODE_ENV,
+    time: new Date().toISOString()
+  });
+});
 
 // Base route
 app.get('/', (req, res) => {
