@@ -46,6 +46,73 @@ const Login = () => {
   const [customGoogleEmail, setCustomGoogleEmail] = useState('');
   const [customGoogleName, setCustomGoogleName] = useState('');
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [googleClient, setGoogleClient] = useState(null);
+
+  useEffect(() => {
+    let timeoutId;
+    const initGoogleOAuth = () => {
+      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      
+      if (!window.google) {
+        timeoutId = setTimeout(initGoogleOAuth, 500);
+        return;
+      }
+
+      if (!clientId || clientId === 'your_copied_client_id' || clientId.trim() === '') {
+        console.warn('⚠️ Google Client ID is not configured. Google Sign-In will fall back to Simulation Mode.');
+        return;
+      }
+
+      try {
+        const client = window.google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: 'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
+          callback: async (tokenResponse) => {
+            if (tokenResponse && tokenResponse.access_token) {
+              setIsGoogleLoading(true);
+              setErrorMsg(null);
+              try {
+                const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                  headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+                });
+                if (!res.ok) {
+                  throw new Error('Failed to retrieve user profile from Google.');
+                }
+                const profile = await res.json();
+                
+                if (profile.email) {
+                  await handleGoogleLogin(profile.name || 'Google Guest', profile.email);
+                } else {
+                  throw new Error('Google account email not found.');
+                }
+              } catch (err) {
+                console.error('[Google OAuth Error]:', err);
+                setErrorMsg(err.message || 'Google Sign-In failed.');
+              } finally {
+                setIsGoogleLoading(false);
+              }
+            }
+          }
+        });
+        setGoogleClient(client);
+      } catch (err) {
+        console.error('Failed to initialize Google OAuth token client:', err);
+      }
+    };
+
+    initGoogleOAuth();
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, []);
+
+  const triggerGoogleSignIn = () => {
+    if (googleClient) {
+      googleClient.requestAccessToken();
+    } else {
+      setShowGoogleModal(true);
+    }
+  };
 
   // References for OTP input elements
   const inputRefs = [
@@ -681,7 +748,7 @@ const Login = () => {
               {/* Continue with Google button */}
               <button
                 type="button"
-                onClick={() => setShowGoogleModal(true)}
+                onClick={triggerGoogleSignIn}
                 className="w-full bg-white text-slate-900 font-bold py-3 px-4 rounded-lg hover:bg-slate-100 transition-all duration-300 flex items-center justify-center space-x-2.5 text-xs uppercase tracking-wider border border-slate-300 cursor-pointer"
               >
                 <svg className="h-4 w-4" viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
