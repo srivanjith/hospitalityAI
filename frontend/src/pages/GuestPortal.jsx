@@ -1658,16 +1658,16 @@ const GuestPortal = () => {
           >
             <source src="/hotel-bg.mp4" type="video/mp4" />
           </video>
-          {/* Light gradient overlay for text readability only */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/60"></div>
+          {/* Darker gradient overlay for excellent text readability */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/55 to-black/80"></div>
         
         </div>
         {/* Abstract Room Design Element */}
         <div className="absolute top-[20%] right-[-10%] w-[50%] h-[60%] rounded-full bg-luxury-gold/5 blur-[120px] pointer-events-none animate-float"></div>
         <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[60%] rounded-full bg-[#aa7c11]/5 blur-[120px] pointer-events-none animate-float-reverse"></div>
         
-        {/* Hero Content Overlay */}
-        <div className="relative z-20 text-center max-w-4xl px-6 space-y-6 mt-12">
+        {/* Hero Content Overlay with Drop Shadow for Contrast */}
+        <div className="relative z-20 text-center max-w-4xl px-6 space-y-6 mt-12 drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
           {/* Rating */}
           <div className="flex items-center justify-center space-x-1 animate-slide-up animation-delay-100">
             {[1, 2, 3, 4, 5].map(i => (
@@ -1683,7 +1683,7 @@ const GuestPortal = () => {
             Your Golden heaven in ERODE
           </p>
           
-          <p className="text-sm md:text-base text-slate-300 max-w-2xl mx-auto leading-relaxed font-sans animate-slide-up animation-delay-400">
+          <p className="text-sm md:text-base text-slate-200 max-w-2xl mx-auto leading-relaxed font-sans animate-slide-up animation-delay-400">
             Escape to a serene sanctuary of unparalleled comfort in the heart of Tamil Nadu. Curated dining, exclusive wellness spas, and gold-standard personal service await your arrival.
           </p>
 
