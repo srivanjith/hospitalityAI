@@ -549,7 +549,7 @@ const Login = () => {
 
           {/* Bottom Quote */}
           <div className="relative z-10 border-t border-slate-800/80 pt-6">
-            <p className="text-xs italic text-slate-350 leading-relaxed font-serif">
+            <p className="text-white text-xs italic text-slate-350 leading-relaxed font-serif">
               "True hospitality consists of giving the best of yourself to your guests. Welcome to a sanctuary designed to soothe your mind and body."
             </p>
             <span className="text-[10px] text-luxury-gold uppercase tracking-widest font-semibold block mt-2 font-mono">
