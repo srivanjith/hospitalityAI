@@ -49,6 +49,34 @@ const getActiveStaffCounts = async () => {
   return counts;
 };
 
+// Helper to generate dynamic insights based on adjusted occupancy and date
+const generateForecastInsights = (dateStr, occupancy) => {
+  const targetDate = new Date(dateStr);
+  const day = targetDate.getDay();
+  const month = targetDate.getMonth();
+  const monthDayStr = `${String(month + 1).padStart(2, '0')}-${String(targetDate.getDate()).padStart(2, '0')}`;
+  
+  const insights = [];
+  const holiday = mlService.HOLIDAYS_EVENTS[monthDayStr];
+  if (holiday) {
+    insights.push(`Holiday surge for ${holiday.name} (+${holiday.impact}% demand expected). Ensure all shifts are fully staffed.`);
+  }
+
+  if (occupancy >= 85) {
+    insights.push("Critically high occupancy (>85%) predicted. Housekeeping requires double allocation. Consider scheduling a backup receptionist.");
+  } else if (occupancy >= 60) {
+    insights.push("Moderate-to-high occupancy expected. Standard staffing levels recommended across all shifts.");
+  } else if (occupancy < 35) {
+    insights.push("Low demand window. Staffing counts minimized. Save labor costs by offering voluntary time off or scheduling maintenance work.");
+  }
+
+  if (day === 5 || day === 6) {
+    insights.push("Weekend peak check-in patterns. Front desk staffing levels increased to prevent bottlenecks.");
+  }
+
+  return insights;
+};
+
 // @desc    Get occupancy forecasting and staffing recommendations for a range
 // @route   GET /api/forecasts
 // @access  Private
@@ -69,19 +97,40 @@ const getForecast = async (req, res) => {
     const todayStr = new Date().toISOString().split('T')[0];
     const activeStaffCounts = await getActiveStaffCounts();
 
+    // Fetch active bookings (non-cancelled) to match guests present on each date
+    const bookings = await db.collection('bookings').find();
+    const activeBookings = bookings.filter(b => b.status !== 'cancelled');
+
     for (const f of rawForecasts) {
-      if (f.date === todayStr) {
-        const checkedInBookings = await db.collection('bookings').find({ status: 'checked-in' });
-        let actualGuestsCount = 0;
-        checkedInBookings.forEach(b => {
-          actualGuestsCount += (b.guestsCount || 0);
-        });
-        const actualRoomsOccupied = checkedInBookings.length;
-        
+      // Find active bookings present on this date
+      const bookingsOnDate = activeBookings.filter(b => {
+        const checkInStr = b.checkIn.split('T')[0];
+        const checkOutStr = b.checkOut.split('T')[0];
+        return checkInStr <= f.date && checkOutStr > f.date;
+      });
+
+      let actualGuestsCount = 0;
+      bookingsOnDate.forEach(b => {
+        actualGuestsCount += (b.guestsCount || 0);
+      });
+      const actualRoomsOccupied = bookingsOnDate.length;
+
+      // Adjust predicted stats based on actual present bookings
+      if (f.date <= todayStr) {
         f.roomsOccupied = actualRoomsOccupied;
         f.predictedOccupancy = Math.round((actualRoomsOccupied / totalRooms) * 100);
         f.predictedGuests = actualGuestsCount;
+      } else {
+        f.roomsOccupied = Math.max(f.roomsOccupied || 0, actualRoomsOccupied);
+        f.predictedOccupancy = Math.max(f.predictedOccupancy || 0, Math.round((f.roomsOccupied / totalRooms) * 100));
+        f.predictedGuests = Math.max(f.predictedGuests || 0, actualGuestsCount);
       }
+
+      // Recalculate staff optimization/recommendation based on actual present guests
+      f.recommendedStaff = mlService.calculateStaffForOccupancy(f.predictedOccupancy, f.predictedGuests);
+      
+      // Update insights based on new occupancy levels
+      f.insights = generateForecastInsights(f.date, f.predictedOccupancy);
 
       const actualStaff = await getScheduledStaffForDate(f.date);
       
@@ -177,6 +226,38 @@ const optimizeShifts = async (req, res) => {
       const model = mlService.fitForecastingModel(history);
       const prediction = mlService.predictForDate(date, model);
       
+      // Fetch bookings and count active guests/rooms for this date
+      const bookings = await db.collection('bookings').find();
+      const activeBookings = bookings.filter(b => b.status !== 'cancelled');
+      const bookingsOnDate = activeBookings.filter(b => {
+        const checkInStr = b.checkIn.split('T')[0];
+        const checkOutStr = b.checkOut.split('T')[0];
+        return checkInStr <= date && checkOutStr > date;
+      });
+
+      let actualGuestsCount = 0;
+      bookingsOnDate.forEach(b => {
+        actualGuestsCount += (b.guestsCount || 0);
+      });
+      const actualRoomsOccupied = bookingsOnDate.length;
+
+      const hotels = await db.collection('hotels').find();
+      const totalRooms = hotels[0]?.totalRooms || 500;
+      const todayStr = new Date().toISOString().split('T')[0];
+
+      if (date <= todayStr) {
+        prediction.roomsOccupied = actualRoomsOccupied;
+        prediction.predictedOccupancy = Math.round((actualRoomsOccupied / totalRooms) * 100);
+        prediction.predictedGuests = actualGuestsCount;
+      } else {
+        prediction.roomsOccupied = Math.max(prediction.roomsOccupied || 0, actualRoomsOccupied);
+        prediction.predictedOccupancy = Math.max(prediction.predictedOccupancy || 0, Math.round((prediction.roomsOccupied / totalRooms) * 100));
+        prediction.predictedGuests = Math.max(prediction.predictedGuests || 0, actualGuestsCount);
+      }
+
+      prediction.recommendedStaff = mlService.calculateStaffForOccupancy(prediction.predictedOccupancy, prediction.predictedGuests);
+      prediction.insights = generateForecastInsights(date, prediction.predictedOccupancy);
+      
       rec = await db.collection('recommendations').create({
         date,
         predictedOccupancy: prediction.predictedOccupancy,
@@ -230,9 +311,12 @@ const optimizeShifts = async (req, res) => {
 // @access  Private
 const getNotifications = async (req, res) => {
   try {
+    const todayStr = new Date().toISOString().split('T')[0];
     const notifications = await db.collection('notifications').find();
+    // Filter out notifications with a future date
+    const filtered = notifications.filter(n => !n.date || n.date <= todayStr);
     // Sort: newest first
-    const sorted = notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const sorted = filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     return res.json(sorted);
   } catch (error) {
     console.error('Fetch Notifications Error:', error);
@@ -253,9 +337,41 @@ const markNotificationsRead = async (req, res) => {
   }
 };
 
+// @desc    Delete all notifications
+// @route   DELETE /api/forecasts/notifications
+// @access  Private
+const deleteAllNotifications = async (req, res) => {
+  try {
+    await db.collection('notifications').deleteMany({});
+    return res.json({ message: 'All notifications cleared successfully' });
+  } catch (error) {
+    console.error('Delete All Notifications Error:', error);
+    return res.status(500).json({ message: 'Server error clearing notifications' });
+  }
+};
+
+// @desc    Delete a notification
+// @route   DELETE /api/forecasts/notifications/:id
+// @access  Private
+const deleteNotification = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await db.collection('notifications').deleteOne({ id });
+    if (result.deletedCount === 0) {
+      await db.collection('notifications').deleteOne({ _id: id });
+    }
+    return res.json({ message: 'Notification deleted successfully' });
+  } catch (error) {
+    console.error('Delete Notification Error:', error);
+    return res.status(500).json({ message: 'Server error deleting notification' });
+  }
+};
+
 module.exports = {
   getForecast,
   optimizeShifts,
   getNotifications,
-  markNotificationsRead
+  markNotificationsRead,
+  deleteNotification,
+  deleteAllNotifications
 };

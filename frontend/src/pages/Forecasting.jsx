@@ -68,6 +68,34 @@ const Forecasting = () => {
   const [festivalActive, setFestivalActive] = useState(false);
   const [cancellationRate, setCancellationRate] = useState(10);
 
+  // Helper to map a date string to a season ID
+  const getSeasonIdForDate = (dateStr) => {
+    if (!dateStr) return 'summer';
+    const date = new Date(dateStr);
+    const month = date.getMonth(); // 0-11
+    
+    // Summer: March (2), April (3), May (4)
+    if (month === 2 || month === 3 || month === 4) {
+      return 'summer';
+    }
+    // Monsoon: June (5), July (6), August (7), September (8)
+    if (month === 5 || month === 6 || month === 7 || month === 8) {
+      return 'monsoon';
+    }
+    // Holidays: October (9), November (10), December (11)
+    if (month === 9 || month === 10 || month === 11) {
+      return 'holiday';
+    }
+    // Winter: January (0), February (1)
+    return 'winter';
+  };
+
+  // Automatically update selected season when start date changes
+  useEffect(() => {
+    const autoSeason = getSeasonIdForDate(startDate);
+    setSelectedSeason(autoSeason);
+  }, [startDate]);
+
   // Effective multiplier for display (does NOT mutate backend forecasts)
   const modelMultipliers = { linear: 1.00, rf: 1.03, xgb: 1.05, lstm: 1.08 };
   const seasonFactor = SEASONS.find(s => s.id === selectedSeason)?.factor || 1;

@@ -263,6 +263,22 @@ const api = {
     return handleResponse(res);
   },
 
+  async deleteNotification(id) {
+    const res = await fetch(`${BASE_URL}/forecasts/notifications/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  async deleteAllNotifications() {
+    const res = await fetch(`${BASE_URL}/forecasts/notifications`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
   // Exports url helper
   getExportUrl(type, startDate, endDate) {
     const token = localStorage.getItem('token');

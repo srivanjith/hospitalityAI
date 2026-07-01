@@ -5,11 +5,19 @@ const { db } = require('../config/db');
  */
 const createNotification = async (type, title, message, dateStr = null) => {
   try {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const targetDate = dateStr || todayStr;
+
+    // Do not create notifications for future dates
+    if (targetDate > todayStr) {
+      return null;
+    }
+
     const notification = {
       type, // 'occupancy' | 'staffing' | 'high-demand' | 'system'
       title,
       message,
-      date: dateStr || new Date().toISOString().split('T')[0],
+      date: targetDate,
       read: false,
       createdAt: new Date().toISOString()
     };

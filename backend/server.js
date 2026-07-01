@@ -78,7 +78,9 @@ const {
   getForecast,
   optimizeShifts,
   getNotifications,
-  markNotificationsRead
+  markNotificationsRead,
+  deleteNotification,
+  deleteAllNotifications
 } = require('./controllers/forecastController');
 
 // Report Controller imports
@@ -129,6 +131,8 @@ forecastRoutes.get('/', protect, getForecast);
 forecastRoutes.post('/optimize', protect, optimizeShifts);
 forecastRoutes.get('/notifications', protect, getNotifications);
 forecastRoutes.put('/notifications/read', protect, markNotificationsRead);
+forecastRoutes.delete('/notifications', protect, deleteAllNotifications);
+forecastRoutes.delete('/notifications/:id', protect, deleteNotification);
 
 // Hook up Reports Routes
 reportRoutes.get('/export', protect, exportReport);

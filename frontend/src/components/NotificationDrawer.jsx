@@ -1,9 +1,9 @@
 import { useRef, useEffect } from 'react';
-import { X, Flame, AlertCircle, HelpCircle, Check, Settings } from 'lucide-react';
+import { X, Flame, AlertCircle, HelpCircle, Check, Settings, Trash2 } from 'lucide-react';
 import { useNotifications } from '../context/NotificationContext';
 
 const NotificationDrawer = ({ isOpen, onClose }) => {
-  const { notifications, markAllAsRead } = useNotifications();
+  const { notifications, markAllAsRead, deleteNotification, deleteAllNotifications } = useNotifications();
   const drawerRef = useRef(null);
 
   // Close when clicking outside drawer
@@ -64,14 +64,25 @@ const NotificationDrawer = ({ isOpen, onClose }) => {
             <Flame className="h-5 w-5 text-luxury-gold animate-bounce" />
             <h3 className="text-lg font-semibold dark:text-white font-serif">Alert Center</h3>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             {notifications.some(n => !n.read) && (
               <button
                 onClick={markAllAsRead}
                 className="text-xs text-luxury-gold hover:text-luxury-goldDark font-semibold flex items-center space-x-1 hover:underline cursor-pointer"
+                title="Mark all read"
               >
                 <Check className="h-3 w-3" />
-                <span>Mark all read</span>
+                <span>Mark read</span>
+              </button>
+            )}
+            {notifications.length > 0 && (
+              <button
+                onClick={deleteAllNotifications}
+                className="text-xs text-rose-500 hover:text-rose-600 font-semibold flex items-center space-x-1 hover:underline cursor-pointer"
+                title="Clear all alerts"
+              >
+                <Trash2 className="h-3 w-3" />
+                <span>Clear all</span>
               </button>
             )}
             <button
@@ -95,7 +106,7 @@ const NotificationDrawer = ({ isOpen, onClose }) => {
             notifications.map((notif) => (
               <div
                 key={notif.id || notif._id}
-                className={`p-4 rounded-xl border text-left transition-all duration-200 ${getBorderColor(
+                className={`p-4 rounded-xl border text-left transition-all duration-200 group relative ${getBorderColor(
                   notif.type,
                   notif.read
                 )}`}
@@ -107,11 +118,20 @@ const NotificationDrawer = ({ isOpen, onClose }) => {
                       <span className="text-xs font-bold uppercase tracking-wider dark:text-slate-200">
                         {notif.title}
                       </span>
-                      <span className="text-[10px] text-slate-400">
-                        {notif.date}
-                      </span>
+                      <div className="flex items-center space-x-1.5">
+                        <span className="text-[10px] text-slate-400">
+                          {notif.date}
+                        </span>
+                        <button
+                          onClick={() => deleteNotification(notif.id || notif._id)}
+                          className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-slate-400 hover:text-rose-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-opacity duration-200 cursor-pointer"
+                          title="Delete Notification"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
                     </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
+                    <p className="text-xs text-slate-600 dark:text-slate-400 font-medium leading-relaxed pr-4">
                       {notif.message}
                     </p>
                   </div>

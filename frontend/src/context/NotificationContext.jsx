@@ -33,6 +33,31 @@ export const NotificationProvider = ({ children }) => {
     }
   };
 
+  const deleteNotification = async (id) => {
+    if (!user) return;
+    try {
+      await api.deleteNotification(id);
+      setNotifications(prev => prev.filter(n => (n.id || n._id) !== id));
+      setUnreadCount(prev => {
+        const deleted = notifications.find(n => (n.id || n._id) === id);
+        return deleted && !deleted.read ? Math.max(0, prev - 1) : prev;
+      });
+    } catch (err) {
+      console.error('Error deleting notification:', err);
+    }
+  };
+
+  const deleteAllNotifications = async () => {
+    if (!user) return;
+    try {
+      await api.deleteAllNotifications();
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch (err) {
+      console.error('Error deleting all notifications:', err);
+    }
+  };
+
   useEffect(() => {
     if (user) {
       const timer = setTimeout(() => {
@@ -54,7 +79,7 @@ export const NotificationProvider = ({ children }) => {
   }, [user, fetchNotifications]);
 
   return (
-    <NotificationContext.Provider value={{ notifications, unreadCount, fetchNotifications, markAllAsRead }}>
+    <NotificationContext.Provider value={{ notifications, unreadCount, fetchNotifications, markAllAsRead, deleteNotification, deleteAllNotifications }}>
       {children}
     </NotificationContext.Provider>
   );

@@ -222,5 +222,6 @@ module.exports = {
   fitForecastingModel,
   predictForDate,
   getForecastRange,
-  calculateStaffForOccupancy
+  calculateStaffForOccupancy,
+  HOLIDAYS_EVENTS
 };
