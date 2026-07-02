@@ -100,13 +100,25 @@ const getForecast = async (req, res) => {
     // Fetch active bookings (non-cancelled) to match guests present on each date
     const bookings = await db.collection('bookings').find();
     const activeBookings = bookings.filter(b => b.status !== 'cancelled');
-
     for (const f of rawForecasts) {
       // Find active bookings present on this date
       const bookingsOnDate = activeBookings.filter(b => {
         const checkInStr = b.checkIn.split('T')[0];
         const checkOutStr = b.checkOut.split('T')[0];
-        return checkInStr <= f.date && checkOutStr > f.date;
+        
+        const dateMatches = checkInStr <= f.date && checkOutStr > f.date;
+        if (!dateMatches) return false;
+
+        if (f.date === todayStr) {
+          // Today: only actual checked-in guests count as occupying a room
+          return b.status === 'checked-in';
+        } else if (f.date > todayStr) {
+          // Future: booked (reservations) and checked-in represent expected occupancy
+          return b.status === 'booked' || b.status === 'checked-in';
+        } else {
+          // Past: guests who actually checked in or completed their checkout
+          return b.status === 'checked-in' || b.status === 'checked-out';
+        }
       });
 
       let actualGuestsCount = 0;

@@ -160,6 +160,14 @@ const updateBookingStatus = async (req, res) => {
     else if (prevStatus === 'cancelled' && status !== 'cancelled') {
       await adjustOccupancyHistory(dates, 1, Number(booking.guestsCount), revenuePerNight);
     }
+    // If checked out from checked-in, deduct for today and future remaining stay dates
+    else if (status === 'checked-out' && prevStatus === 'checked-in') {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const remainingDates = dates.filter(d => d >= todayStr);
+      if (remainingDates.length > 0) {
+        await adjustOccupancyHistory(remainingDates, -1, -Number(booking.guestsCount), -revenuePerNight);
+      }
+    }
 
     return res.json({ ...booking, status });
   } catch (error) {

@@ -27,6 +27,11 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   
+  // Transition Overlay States
+  const [redirectionTarget, setRedirectionTarget] = useState(null);
+  const [showTransitionOverlay, setShowTransitionOverlay] = useState(false);
+  const [transitionStatus, setTransitionStatus] = useState('Verifying credentials...');
+  
   // OTP Flow States
   const [step, setStep] = useState('credentials'); // 'credentials' | 'otp' | 'signup'
   const [otpInput, setOtpInput] = useState(['', '', '', '', '', '']);
@@ -47,6 +52,24 @@ const Login = () => {
   const [customGoogleName, setCustomGoogleName] = useState('');
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [googleClient, setGoogleClient] = useState(null);
+
+  const triggerRedirectionAnimation = (data) => {
+    setRedirectionTarget(data);
+    setShowTransitionOverlay(true);
+    setTransitionStatus('Establishing secure handshake...');
+    
+    setTimeout(() => {
+      setTransitionStatus(data.role === 'guest' ? 'Preparing guest suite portal...' : 'Loading executive controls...');
+    }, 850);
+
+    setTimeout(() => {
+      setTransitionStatus(data.role === 'guest' ? 'Syncing room key card...' : 'Synchronizing node logs...');
+    }, 1700);
+
+    setTimeout(() => {
+      completeLogin(data);
+    }, 2500);
+  };
 
   useEffect(() => {
     let timeoutId;
@@ -190,7 +213,7 @@ const Login = () => {
       const loginData = await api.login(email, password);
       
       // 2. Credentials valid! Access granted immediately without OTP
-      completeLogin(loginData);
+      triggerRedirectionAnimation(loginData);
     } catch (err) {
       setErrorMsg(err.message || 'Verification failed. Please check your credentials.');
     } finally {
@@ -249,7 +272,7 @@ const Login = () => {
         // 2. Email exists! Log them in directly
         const loginData = await api.googleLogin(googleName, googleEmail);
         setShowGoogleModal(false);
-        completeLogin(loginData);
+        triggerRedirectionAnimation(loginData);
       } else {
         // 3. Email is new! Generate OTP and transition to OTP verification screen
         const otpCode = generateOTP();
@@ -316,14 +339,14 @@ const Login = () => {
             tempLoginData.isGoogleLogin || false
           );
           setOtpSuccess('Account created! Entering Dashboard...');
-          completeLogin(signupData);
+          triggerRedirectionAnimation(signupData);
         } catch (err) {
           setOtpError(err.message || 'Registration failed.');
           setIsVerifyingOtp(false);
         }
       } else {
         setOtpSuccess('OTP Verified! Entering Dashboard...');
-        completeLogin(tempLoginData);
+        triggerRedirectionAnimation(tempLoginData);
       }
     } else {
       setOtpError('Invalid OTP code. Please verify the code sent to your email.');
@@ -1136,6 +1159,46 @@ const Login = () => {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Redirection / Transition Overlay */}
+      {showTransitionOverlay && (
+        <div className="fixed inset-0 bg-[#070a13] z-[9999] flex flex-col items-center justify-center text-center p-4 backdrop-blur-xl animate-fade-in">
+          {/* Glowing premium backgrounds */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[320px] h-[320px] rounded-full bg-luxury-gold/10 blur-[80px] pointer-events-none"></div>
+          
+          <div className="max-w-xs w-full flex flex-col items-center space-y-8 z-10">
+            {/* Glowing card/key icon wrapper */}
+            <div className="relative flex items-center justify-center w-24 h-24 rounded-2xl bg-gradient-to-br from-[#1b2336] to-[#0f1422] border border-luxury-gold/30 shadow-2xl overflow-hidden animate-pulse-glow">
+              {/* Scanning laser line */}
+              <div className="absolute left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-luxury-gold to-transparent animate-key-card-scan"></div>
+              <Hotel className="h-10 w-10 text-luxury-gold" />
+            </div>
+
+            {/* Typography block */}
+            <div className="space-y-2 animate-text-reveal">
+              <span className="text-[9px] uppercase tracking-[0.3em] text-luxury-gold font-bold font-mono block">
+                {redirectionTarget?.role === 'guest' ? 'Resident Authorization' : 'Executive Credentials'}
+              </span>
+              <h2 className="text-2xl font-serif font-bold text-white leading-tight">
+                THE GRAND ROYAL
+              </h2>
+              <p className="text-xs text-slate-400 font-medium mt-1">
+                Greetings, <span className="text-luxury-gold font-bold">{redirectionTarget?.name || 'Guest'}</span>
+              </p>
+            </div>
+
+            {/* Linear Progress Loader */}
+            <div className="space-y-3 w-full max-w-[200px] animate-text-reveal animation-delay-200">
+              <div className="h-[2px] bg-slate-800/80 rounded-full overflow-hidden relative">
+                <div className="h-full bg-gradient-to-r from-luxury-gold via-amber-400 to-luxury-goldDark animate-progress-load"></div>
+              </div>
+              <span className="text-[8px] uppercase tracking-widest text-slate-500 font-bold font-mono block animate-pulse">
+                {transitionStatus}
+              </span>
+            </div>
           </div>
         </div>
       )}

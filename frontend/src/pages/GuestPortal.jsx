@@ -840,8 +840,8 @@ const GuestPortal = () => {
   };
 
   const isTop = scrollY < 50;
-  const showSticky = viewMode !== 'profile' && !selectedCategoryPage && isTop;
-  const showFloating = viewMode !== 'profile' && !selectedCategoryPage && !isTop;
+  const showSticky = viewMode !== 'profile' && !selectedCategoryPage && !selectedRoomShowcase && isTop;
+  const showFloating = viewMode !== 'profile' && !selectedCategoryPage && !selectedRoomShowcase && !isTop;
 
   // Category page renderer
   const renderCategoryPage = (categoryId) => {
@@ -1643,7 +1643,7 @@ const GuestPortal = () => {
           </div>
         </div>
       ) : (
-        <>
+        <div className="animate-fade-in flex flex-col">
           {/* 2. Hero Full-Screen Banner */}
           <section id="home" className="relative h-screen flex items-center justify-center pt-20 overflow-hidden">
         {/* Video backdrop */}
@@ -2397,7 +2397,7 @@ const GuestPortal = () => {
           </div>
         </div>
       </section>
-      </>
+      </div>
       )}
 
       {/* 11. Footer */}
