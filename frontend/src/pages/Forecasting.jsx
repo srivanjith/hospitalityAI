@@ -260,7 +260,7 @@ const Forecasting = () => {
       <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
         <div className="text-center space-y-2">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-luxury-gold mx-auto"></div>
-          <p className="text-sm text-slate-500 font-mono">Running Holt-Winters Forecasting Algorithms...</p>
+          <p className="text-sm text-slate-500 font-mono">Running linear regression Forecasting Algorithms...</p>
         </div>
       </div>
     );
