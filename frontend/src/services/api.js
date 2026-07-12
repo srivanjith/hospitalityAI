@@ -231,8 +231,8 @@ const api = {
   },
 
   // Forecasting endpoints
-  async getForecast(startDate, days = 7) {
-    const res = await fetch(`${BASE_URL}/forecasts?startDate=${startDate}&days=${days}`, {
+  async getForecast(startDate, days = 7, model = 'mlr') {
+    const res = await fetch(`${BASE_URL}/forecasts?startDate=${startDate}&days=${days}&model=${model}`, {
       headers: getHeaders()
     });
     return handleResponse(res);

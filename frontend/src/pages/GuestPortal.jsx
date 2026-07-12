@@ -451,10 +451,9 @@ const GuestPortal = () => {
     e.preventDefault();
     setErrorMsg(null);
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const checkInDate = new Date(checkIn);
-    if (checkInDate < today) {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const checkInStr = checkIn.split('T')[0];
+    if (checkInStr < todayStr) {
       setErrorMsg('Arrival date cannot be in the past');
       return;
     }

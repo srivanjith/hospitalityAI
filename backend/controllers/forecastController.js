@@ -14,10 +14,10 @@ const getScheduledStaffForDate = async (dateStr) => {
   };
 
   employees.forEach(emp => {
-    // Check if employee is marked absent/leave on this date
+    // Check if employee is explicitly marked present on this date
     const attendance = (emp.attendance || []).find(a => a.date === dateStr);
-    if (attendance && (attendance.status === 'absent' || attendance.status === 'leave')) {
-      return; // Not working
+    if (!attendance || attendance.status !== 'present') {
+      return; // Not present
     }
     
     // Add to department count if department matches
@@ -81,16 +81,17 @@ const generateForecastInsights = (dateStr, occupancy) => {
 // @route   GET /api/forecasts
 // @access  Private
 const getForecast = async (req, res) => {
-  const { startDate, days } = req.query;
+  const { startDate, days, model } = req.query;
   const numDays = days ? Number(days) : 7;
   const start = startDate || new Date().toISOString().split('T')[0];
+  const modelType = model || 'mlr';
 
   try {
     const hotels = await db.collection('hotels').find();
     const totalRooms = hotels[0]?.totalRooms || 500;
     
     // 1. Get raw forecasts from ML engine
-    const rawForecasts = await mlService.getForecastRange(start, numDays, totalRooms);
+    const rawForecasts = await mlService.getForecastRange(start, numDays, totalRooms, modelType);
     
     // 2. Decorate forecasts with actual scheduled numbers from active employee database
     const decoratedForecasts = [];
@@ -127,15 +128,28 @@ const getForecast = async (req, res) => {
       });
       const actualRoomsOccupied = bookingsOnDate.length;
 
-      // Adjust predicted stats based on actual present bookings
+      // Fetch any existing record in occupancyHistory for this date
+      const occupancyRecord = await db.collection('occupancyHistory').findOne({ date: f.date });
+      const dbRoomsOccupied = occupancyRecord ? (occupancyRecord.roomsOccupied || 0) : 0;
+      const dbGuestsCount = occupancyRecord ? (occupancyRecord.guestCount || 0) : 0;
+      const dbOccupancyPercentage = occupancyRecord ? (occupancyRecord.occupancyPercentage || 0) : 0;
+
+      // Adjust predicted stats based on actual present bookings & occupancy details
       if (f.date <= todayStr) {
-        f.roomsOccupied = actualRoomsOccupied;
-        f.predictedOccupancy = Math.round((actualRoomsOccupied / totalRooms) * 100);
-        f.predictedGuests = actualGuestsCount;
+        f.roomsOccupied = Math.max(actualRoomsOccupied, dbRoomsOccupied);
+        f.predictedGuests = Math.max(actualGuestsCount, dbGuestsCount);
+        f.predictedOccupancy = Math.min(100, Math.max(
+          Math.round((f.roomsOccupied / totalRooms) * 100),
+          dbOccupancyPercentage
+        ));
       } else {
-        f.roomsOccupied = Math.max(f.roomsOccupied || 0, actualRoomsOccupied);
-        f.predictedOccupancy = Math.max(f.predictedOccupancy || 0, Math.round((f.roomsOccupied / totalRooms) * 100));
-        f.predictedGuests = Math.max(f.predictedGuests || 0, actualGuestsCount);
+        f.roomsOccupied = Math.max(f.roomsOccupied || 0, actualRoomsOccupied, dbRoomsOccupied);
+        f.predictedGuests = Math.max(f.predictedGuests || 0, actualGuestsCount, dbGuestsCount);
+        f.predictedOccupancy = Math.min(100, Math.max(
+          f.predictedOccupancy || 0,
+          Math.round((f.roomsOccupied / totalRooms) * 100),
+          dbOccupancyPercentage
+        ));
       }
 
       // Recalculate staff optimization/recommendation based on actual present guests
@@ -153,9 +167,9 @@ const getForecast = async (req, res) => {
       let adjustedStaffScheduled;
 
       if (savedRec) {
-        adjustedStaffScheduled = { ...savedRec.actualStaffScheduled };
+        adjustedStaffScheduled = savedRec.actualStaffScheduled ? { ...savedRec.actualStaffScheduled } : actualStaff;
         
-        if (savedRec.optimized) {
+        if (savedRec.optimized && savedRec.actualStaffScheduled) {
           // If optimized, subtract any absences on that date from the optimized count
           for (const dept of Object.keys(adjustedStaffScheduled)) {
             const totalActive = activeStaffCounts[dept] || 0;
@@ -163,9 +177,6 @@ const getForecast = async (req, res) => {
             const absentCount = Math.max(0, totalActive - totalPresent);
             adjustedStaffScheduled[dept] = Math.max(0, adjustedStaffScheduled[dept] - absentCount);
           }
-        } else {
-          // If not optimized, actual staff is just the present/available staff
-          adjustedStaffScheduled = actualStaff;
         }
 
         finalForecast = {
@@ -235,7 +246,7 @@ const optimizeShifts = async (req, res) => {
     if (!rec) {
       // Generate forecast first if not present
       const history = await db.collection('occupancyHistory').find();
-      const model = mlService.fitForecastingModel(history);
+      const model = await mlService.getOrTrainModel(history, req.body.model || 'mlr');
       const prediction = mlService.predictForDate(date, model);
       
       // Fetch bookings and count active guests/rooms for this date

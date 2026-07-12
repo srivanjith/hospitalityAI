@@ -146,7 +146,7 @@ const connectDB = async () => {
 
     try {
       mongoClient = new MongoClient(mongoUri, {
-        serverSelectionTimeoutMS: 3000
+        serverSelectionTimeoutMS: 30000
       });
       await mongoClient.connect();
       
@@ -285,7 +285,7 @@ const db = {
         }
       },
 
-      async updateOne(query, update) {
+      async updateOne(query, update, options = {}) {
         if (useMongoDB) {
           const normalized = normalizeQuery(query);
           const updatePayload = (update.$set || update.$unset || update.$push || update.$pull || update.$inc) ? update : { $set: update };
@@ -294,7 +294,7 @@ const db = {
           } else {
             updatePayload.$set = { updatedAt: new Date().toISOString() };
           }
-          const result = await dbInstance.collection(name).updateOne(normalized, updatePayload);
+          const result = await dbInstance.collection(name).updateOne(normalized, updatePayload, options);
           return { matchedCount: result.matchedCount, modifiedCount: result.modifiedCount };
         } else {
           const items = jsonDb.read(name);
@@ -311,12 +311,28 @@ const db = {
             items[idx] = updated;
             jsonDb.write(name, items);
             return { matchedCount: 1, modifiedCount: 1 };
+          } else if (options.upsert) {
+            const newId = Math.random().toString(36).substring(2, 11);
+            let newDoc = {
+              _id: newId,
+              id: newId,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            };
+            if (update.$set) {
+              newDoc = { ...newDoc, ...query, ...update.$set };
+            } else {
+              newDoc = { ...newDoc, ...query, ...update };
+            }
+            items.push(newDoc);
+            jsonDb.write(name, items);
+            return { matchedCount: 0, modifiedCount: 1, upsertedId: newId };
           }
           return { matchedCount: 0, modifiedCount: 0 };
         }
       },
 
-      async updateMany(query, update) {
+      async updateMany(query, update, options = {}) {
         if (useMongoDB) {
           const normalized = normalizeQuery(query);
           const updatePayload = (update.$set || update.$unset || update.$push || update.$pull || update.$inc) ? update : { $set: update };
@@ -325,7 +341,7 @@ const db = {
           } else {
             updatePayload.$set = { updatedAt: new Date().toISOString() };
           }
-          const result = await dbInstance.collection(name).updateMany(normalized, updatePayload);
+          const result = await dbInstance.collection(name).updateMany(normalized, updatePayload, options);
           return { matchedCount: result.matchedCount, modifiedCount: result.modifiedCount };
         } else {
           const items = jsonDb.read(name);

@@ -82,15 +82,22 @@ const addBooking = async (req, res) => {
       return res.status(400).json({ message: 'Please enter all fields' });
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const checkInDate = new Date(checkIn);
-    if (checkInDate < today) {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const checkInStr = checkIn.split('T')[0];
+    if (checkInStr < todayStr) {
       return res.status(400).json({ message: 'invalid date' });
     }
 
     const hotels = await db.collection('hotels').find();
-    const hotelId = hotels[0]?.id || hotels[0]?._id;
+    let hotelId = hotels[0]?.id || hotels[0]?._id;
+    if (!hotelId) {
+      const defaultHotel = await db.collection('hotels').create({
+        name: 'The Grand Royal Resort',
+        location: 'Sathy, Erode, Tamil Nadu',
+        totalRooms: 500
+      });
+      hotelId = defaultHotel.id || defaultHotel._id;
+    }
 
     // Calculate dynamic pricing based on room type
     let rate = 120;
@@ -250,7 +257,7 @@ const getOccupancySuggestion = async (req, res) => {
     const hotels = await db.collection('hotels').find();
     const totalRooms = hotels[0]?.totalRooms || 500;
 
-    const rawForecasts = await mlService.getForecastRange(todayStr, 7, totalRooms);
+    const rawForecasts = await mlService.getForecastRange(todayStr, 7, totalRooms, 'mlr');
 
     // ── C. Compute accuracy based on same-period last year vs ML prediction ──
     // For days where we have last year data, compare the ML prediction (retrained on same data position)
@@ -263,7 +270,7 @@ const getOccupancySuggestion = async (req, res) => {
       .sort((a, b) => new Date(a.date) - new Date(b.date));
 
     if (trainingData.length >= 14 && lastYearActuals.length > 0) {
-      const model = mlService.fitForecastingModel(trainingData);
+      const model = await mlService.getOrTrainModel(trainingData, 'mlr');
       lastYearActuals.forEach(actual => {
         const predicted = mlService.predictForDate(actual.date, model, totalRooms);
         const error = Math.abs(predicted.predictedOccupancy - actual.occupancyPercentage);
@@ -301,12 +308,27 @@ const getOccupancySuggestion = async (req, res) => {
     }, {});
     const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
+    // Fetch active bookings (non-cancelled) to match guests present on each date
+    const bookings = await db.collection('bookings').find();
+    const activeBookings = bookings.filter(b => b.status !== 'cancelled');
+
     // ── G. Next 7-day forecast for chart ──
-    const next7 = rawForecasts.map(f => ({
-      date: f.date,
-      predicted: f.predictedOccupancy,
-      label: new Date(f.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric' })
-    }));
+    const next7 = rawForecasts.map(f => {
+      // Find active bookings on this specific date
+      const bookingsOnDate = activeBookings.filter(b => {
+        const checkInStr = b.checkIn.split('T')[0];
+        const checkOutStr = b.checkOut.split('T')[0];
+        return checkInStr <= f.date && checkOutStr > f.date;
+      });
+      const roomsBooked = bookingsOnDate.length;
+
+      return {
+        date: f.date,
+        predicted: f.predictedOccupancy,
+        roomsBooked,
+        label: new Date(f.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric' })
+      };
+    });
 
     // ── H. Last year same window for chart overlay ──
     const next7LastYear = next7.map(f => {

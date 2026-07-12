@@ -516,6 +516,7 @@ const Dashboard = ({ setCurrentPage }) => {
                     <tr className="border-b border-slate-100 dark:border-slate-800">
                       <th className="text-left py-2 px-3 text-slate-400 font-semibold">Date</th>
                       <th className="text-center py-2 px-3 text-indigo-400 font-semibold">Predicted</th>
+                      <th className="text-center py-2 px-3 text-emerald-400 font-semibold">Bookings</th>
                       <th className="text-center py-2 px-3 text-amber-400 font-semibold">Last Year Actual</th>
                       <th className="text-center py-2 px-3 text-slate-400 font-semibold">Difference</th>
                       <th className="text-left py-2 px-3 text-slate-400 font-semibold">Confidence</th>
@@ -535,6 +536,11 @@ const Dashboard = ({ setCurrentPage }) => {
                           <td className="py-2.5 px-3 font-semibold dark:text-slate-200">{f.label}</td>
                           <td className="py-2.5 px-3 text-center">
                             <span className="font-bold text-indigo-600 dark:text-indigo-300">{f.predicted}%</span>
+                          </td>
+                          <td className="py-2.5 px-3 text-center">
+                            <span className="font-semibold text-emerald-650 dark:text-emerald-400 font-mono">
+                              {f.roomsBooked || 0} {f.roomsBooked === 1 ? 'room' : 'rooms'}
+                            </span>
                           </td>
                           <td className="py-2.5 px-3 text-center">
                             {lyActual != null

@@ -1,4 +1,4 @@
-const { fitForecastingModel, predictForDate, calculateStaffForOccupancy } = require('../services/mlService');
+const { fitForecastingModel, fitModelByType, predictForDate, calculateStaffForOccupancy } = require('../services/mlService');
 
 const mockHistory = [
   { date: '2026-05-01', occupancyPercentage: 40, guestCount: 68, roomsOccupied: 40 }, // Friday
@@ -87,6 +87,46 @@ const runTests = () => {
     process.exit(1);
   }
   console.log('✅ Test 4 Passed!\n');
+
+  // Test 5: Verify Multiple Linear Regression
+  console.log('Test 5: Verify Multiple Linear Regression model fitting...');
+  const mlrModel = fitModelByType(mockHistory, 'mlr');
+  console.log(`- MLR coefficients: ${mlrModel.coefficients.map(v => v.toFixed(4)).join(', ')}`);
+  if (mlrModel.coefficients.length !== 19) {
+    console.error('❌ Failed: MLR model should resolve exactly 19 coefficients.');
+    process.exit(1);
+  }
+  
+  const satMlrPrediction = predictForDate('2026-05-16', mlrModel);
+  const monMlrPrediction = predictForDate('2026-05-18', mlrModel);
+  console.log(`- MLR Saturday prediction: ${satMlrPrediction.predictedOccupancy}%`);
+  console.log(`- MLR Monday prediction: ${monMlrPrediction.predictedOccupancy}%`);
+  if (satMlrPrediction.predictedOccupancy <= monMlrPrediction.predictedOccupancy) {
+    console.error('❌ Failed: Saturday occupancy should be higher than Monday in MLR.');
+    process.exit(1);
+  }
+  console.log('✅ Test 5 Passed!\n');
+
+  // Test 6: Verify Holt-Winters Smoothing
+  console.log('Test 6: Verify Holt-Winters model fitting...');
+  const hwModel = fitModelByType(mockHistory, 'holtwinters');
+  console.log(`- HW last level: ${hwModel.lastLevel.toFixed(4)}`);
+  console.log(`- HW last trend: ${hwModel.lastTrend.toFixed(4)}`);
+  console.log(`- HW seasonal factors (Sun-Sat): ${hwModel.seasonalFactors.map(v => v.toFixed(1) + '%').join(', ')}`);
+  if (hwModel.seasonalFactors.length !== 7) {
+    console.error('❌ Failed: Holt-Winters should have exactly 7 seasonal factors.');
+    process.exit(1);
+  }
+
+  const satHwPrediction = predictForDate('2026-05-16', hwModel);
+  const monHwPrediction = predictForDate('2026-05-18', hwModel);
+  console.log(`- HW Saturday prediction: ${satHwPrediction.predictedOccupancy}%`);
+  console.log(`- HW Monday prediction: ${monHwPrediction.predictedOccupancy}%`);
+  if (satHwPrediction.predictedOccupancy <= monHwPrediction.predictedOccupancy) {
+    console.error('❌ Failed: Saturday occupancy should be higher than Monday in Holt-Winters.');
+    process.exit(1);
+  }
+  console.log('✅ Test 6 Passed!\n');
 
   console.log('🎉 ALL ML ALGORITHM VERIFICATION TESTS COMPLETED SUCCESSFULLY!');
 };

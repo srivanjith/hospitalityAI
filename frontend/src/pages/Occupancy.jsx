@@ -4,7 +4,9 @@ import {
   CalendarDays, 
   X,
   AlertOctagon,
-  Search
+  Search,
+  Percent,
+  UsersRound
 } from 'lucide-react';
 import api from '../services/api';
 import { Bar } from 'react-chartjs-2';
@@ -72,10 +74,9 @@ const Occupancy = () => {
     e.preventDefault();
     setFormError(null);
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const checkInDate = new Date(checkIn);
-    if (checkInDate < today) {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const checkInStr = checkIn.split('T')[0];
+    if (checkInStr < todayStr) {
       setFormError('invalid date');
       return;
     }
@@ -182,9 +183,74 @@ const Occupancy = () => {
     );
   }
 
+  const todayStr = new Date().toISOString().split('T')[0];
+  const activeTodayBookings = bookings.filter(b => {
+    const checkInStr = b.checkIn.split('T')[0];
+    const checkOutStr = b.checkOut.split('T')[0];
+    return checkInStr <= todayStr && checkOutStr > todayStr && b.status !== 'cancelled';
+  });
+  const roomsLoggedToday = activeTodayBookings.length;
+  const guestsLoggedToday = activeTodayBookings.reduce((sum, b) => sum + (b.guestsCount || 0), 0);
+  const totalRooms = 500;
+  const availableRoomsToday = Math.max(0, totalRooms - roomsLoggedToday);
+  const occupancyRateToday = Math.min(100, Math.round((roomsLoggedToday / totalRooms) * 100));
+
   return (
     <>
       <div className="space-y-8 animate-fade-in">
+      
+      {/* Summary Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Rooms Logged */}
+        <div className="glass-panel p-6 rounded-2xl flex items-center justify-between shadow-glass hover:shadow-glassGold transition-all duration-300">
+          <div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Rooms Logged Today</p>
+            <h3 className="text-2xl font-bold font-serif mt-2 text-luxury-navy dark:text-white">
+              {roomsLoggedToday} <span className="text-sm font-sans font-normal text-slate-455">/ {totalRooms}</span>
+            </h3>
+            <p className="text-[10px] text-emerald-500 font-semibold mt-1">{occupancyRateToday}% occupancy rate</p>
+          </div>
+          <div className="p-3 bg-amber-500/10 rounded-xl border border-amber-500/20">
+            <CalendarDays className="h-6 w-6 text-luxury-gold" />
+          </div>
+        </div>
+
+        {/* Available Rooms */}
+        <div className="glass-panel p-6 rounded-2xl flex items-center justify-between shadow-glass hover:shadow-glassGold transition-all duration-300">
+          <div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Available Rooms</p>
+            <h3 className="text-2xl font-bold font-serif mt-2 text-luxury-navy dark:text-white">{availableRoomsToday}</h3>
+            <p className="text-[10px] text-slate-400 mt-1">Ready for check-in today</p>
+          </div>
+          <div className="p-3 bg-slate-500/10 rounded-xl border border-slate-500/20">
+            <Percent className="h-6 w-6 text-slate-500" />
+          </div>
+        </div>
+
+        {/* Guests Logged */}
+        <div className="glass-panel p-6 rounded-2xl flex items-center justify-between shadow-glass hover:shadow-glassGold transition-all duration-300">
+          <div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Guests Checked In</p>
+            <h3 className="text-2xl font-bold font-serif mt-2 text-luxury-navy dark:text-white">{guestsLoggedToday}</h3>
+            <p className="text-[10px] text-indigo-500 font-semibold mt-1">In-house guests currently</p>
+          </div>
+          <div className="p-3 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
+            <UsersRound className="h-6 w-6 text-indigo-500" />
+          </div>
+        </div>
+
+        {/* Total Bookings Logged */}
+        <div className="glass-panel p-6 rounded-2xl flex items-center justify-between shadow-glass hover:shadow-glassGold transition-all duration-300">
+          <div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Total Bookings Logged</p>
+            <h3 className="text-2xl font-bold font-serif mt-2 text-luxury-navy dark:text-white">{bookings.length}</h3>
+            <p className="text-[10px] text-slate-400 mt-1">Active ledger records count</p>
+          </div>
+          <div className="p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+            <Plus className="h-6 w-6 text-emerald-500" />
+          </div>
+        </div>
+      </div>
       
       {/* 1. Analytics Visual Graph */}
       <div className="glass-panel p-6 rounded-2xl shadow-glass">
@@ -250,6 +316,23 @@ const Occupancy = () => {
             </thead>
             <tbody>
               {(() => {
+                const matchDate = (dateVal, q) => {
+                  if (!dateVal) return false;
+                  const dateStr = String(dateVal).toLowerCase();
+                  if (dateStr.includes(q)) return true;
+                  try {
+                    const d = new Date(dateVal);
+                    if (isNaN(d.getTime())) return false;
+                    if (d.toLocaleDateString().toLowerCase().includes(q)) return true;
+                    if (d.toISOString().toLowerCase().includes(q)) return true;
+                    const optionsLong = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+                    if (d.toLocaleDateString(undefined, optionsLong).toLowerCase().includes(q)) return true;
+                    const optionsShort = { year: 'numeric', month: 'short', day: 'numeric', weekday: 'short' };
+                    if (d.toLocaleDateString(undefined, optionsShort).toLowerCase().includes(q)) return true;
+                  } catch (e) {}
+                  return false;
+                };
+
                 const filteredBookings = bookings.filter((booking) => {
                   const query = searchQuery.toLowerCase().trim();
                   if (!query) return true;
@@ -259,8 +342,8 @@ const Occupancy = () => {
                     (booking.status || '').toLowerCase().includes(query) ||
                     (booking.checkInTime || '').toLowerCase().includes(query) ||
                     (booking.checkOutTime || '').toLowerCase().includes(query) ||
-                    new Date(booking.checkIn).toLocaleDateString().toLowerCase().includes(query) ||
-                    new Date(booking.checkOut).toLocaleDateString().toLowerCase().includes(query)
+                    matchDate(booking.checkIn, query) ||
+                    matchDate(booking.checkOut, query)
                   );
                 });
 

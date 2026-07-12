@@ -1555,5 +1555,196 @@
     "id": "jb3oupv06",
     "createdAt": "2026-06-06T09:31:52.812Z",
     "updatedAt": "2026-06-06T09:32:25.910Z"
+  },
+  {
+    "date": "2026-07-11",
+    "predictedOccupancy": 0,
+    "predictedGuests": 0,
+    "recommendedStaff": {
+      "Front Desk": 1,
+      "Housekeeping": 2,
+      "Restaurant Services": 2,
+      "Security": 2,
+      "Maintenance": 1
+    },
+    "actualStaffScheduled": {
+      "Front Desk": 3,
+      "Housekeeping": 7,
+      "Restaurant Services": 4,
+      "Security": 3,
+      "Maintenance": 2
+    },
+    "optimized": false,
+    "insights": [
+      "Low demand window. Staffing counts minimized. Save labor costs by offering voluntary time off or scheduling maintenance work.",
+      "Weekend peak check-in patterns. Front desk staffing levels increased to prevent bottlenecks."
+    ],
+    "_id": "2ywstyoku",
+    "id": "2ywstyoku",
+    "createdAt": "2026-07-11T08:43:14.116Z",
+    "updatedAt": "2026-07-11T09:21:55.011Z"
+  },
+  {
+    "date": "2026-07-12",
+    "predictedOccupancy": 71,
+    "predictedGuests": 602,
+    "recommendedStaff": {
+      "Front Desk": 5,
+      "Housekeeping": 18,
+      "Restaurant Services": 14,
+      "Security": 4,
+      "Maintenance": 3
+    },
+    "actualStaffScheduled": {
+      "Front Desk": 3,
+      "Housekeeping": 7,
+      "Restaurant Services": 4,
+      "Security": 3,
+      "Maintenance": 2
+    },
+    "optimized": false,
+    "insights": [
+      "Moderate-to-high occupancy expected. Standard staffing levels recommended across all shifts."
+    ],
+    "_id": "bdiln4otb",
+    "id": "bdiln4otb",
+    "createdAt": "2026-07-11T08:43:14.125Z",
+    "updatedAt": "2026-07-11T09:21:55.021Z"
+  },
+  {
+    "date": "2026-07-13",
+    "predictedOccupancy": 60,
+    "predictedGuests": 507,
+    "recommendedStaff": {
+      "Front Desk": 4,
+      "Housekeeping": 15,
+      "Restaurant Services": 12,
+      "Security": 3,
+      "Maintenance": 2
+    },
+    "actualStaffScheduled": {
+      "Front Desk": 3,
+      "Housekeeping": 7,
+      "Restaurant Services": 4,
+      "Security": 3,
+      "Maintenance": 2
+    },
+    "optimized": false,
+    "insights": [
+      "Moderate-to-high occupancy expected. Standard staffing levels recommended across all shifts."
+    ],
+    "_id": "6xtknucaq",
+    "id": "6xtknucaq",
+    "createdAt": "2026-07-11T08:43:14.135Z",
+    "updatedAt": "2026-07-11T09:21:55.030Z"
+  },
+  {
+    "date": "2026-07-14",
+    "predictedOccupancy": 60,
+    "predictedGuests": 508,
+    "recommendedStaff": {
+      "Front Desk": 4,
+      "Housekeeping": 15,
+      "Restaurant Services": 12,
+      "Security": 3,
+      "Maintenance": 2
+    },
+    "actualStaffScheduled": {
+      "Front Desk": 3,
+      "Housekeeping": 7,
+      "Restaurant Services": 4,
+      "Security": 3,
+      "Maintenance": 2
+    },
+    "optimized": false,
+    "insights": [
+      "Moderate-to-high occupancy expected. Standard staffing levels recommended across all shifts."
+    ],
+    "_id": "4rhxc0gxb",
+    "id": "4rhxc0gxb",
+    "createdAt": "2026-07-11T08:43:14.144Z",
+    "updatedAt": "2026-07-11T09:21:55.041Z"
+  },
+  {
+    "date": "2026-07-15",
+    "predictedOccupancy": 61,
+    "predictedGuests": 515,
+    "recommendedStaff": {
+      "Front Desk": 4,
+      "Housekeeping": 15,
+      "Restaurant Services": 12,
+      "Security": 3,
+      "Maintenance": 2
+    },
+    "actualStaffScheduled": {
+      "Front Desk": 3,
+      "Housekeeping": 7,
+      "Restaurant Services": 4,
+      "Security": 3,
+      "Maintenance": 2
+    },
+    "optimized": false,
+    "insights": [
+      "Moderate-to-high occupancy expected. Standard staffing levels recommended across all shifts."
+    ],
+    "_id": "jb9y84a6b",
+    "id": "jb9y84a6b",
+    "createdAt": "2026-07-11T08:43:14.155Z",
+    "updatedAt": "2026-07-11T09:21:55.051Z"
+  },
+  {
+    "date": "2026-07-16",
+    "predictedOccupancy": 60.4,
+    "predictedGuests": 513,
+    "recommendedStaff": {
+      "Front Desk": 4,
+      "Housekeeping": 15,
+      "Restaurant Services": 12,
+      "Security": 3,
+      "Maintenance": 2
+    },
+    "actualStaffScheduled": {
+      "Front Desk": 3,
+      "Housekeeping": 7,
+      "Restaurant Services": 4,
+      "Security": 3,
+      "Maintenance": 2
+    },
+    "optimized": false,
+    "insights": [
+      "Moderate-to-high occupancy expected. Standard staffing levels recommended across all shifts."
+    ],
+    "_id": "cqf62rh6u",
+    "id": "cqf62rh6u",
+    "createdAt": "2026-07-11T08:43:14.165Z",
+    "updatedAt": "2026-07-11T09:21:55.060Z"
+  },
+  {
+    "date": "2026-07-17",
+    "predictedOccupancy": 79.5,
+    "predictedGuests": 675,
+    "recommendedStaff": {
+      "Front Desk": 5,
+      "Housekeeping": 20,
+      "Restaurant Services": 15,
+      "Security": 4,
+      "Maintenance": 3
+    },
+    "actualStaffScheduled": {
+      "Front Desk": 3,
+      "Housekeeping": 7,
+      "Restaurant Services": 4,
+      "Security": 3,
+      "Maintenance": 2
+    },
+    "optimized": false,
+    "insights": [
+      "Moderate-to-high occupancy expected. Standard staffing levels recommended across all shifts.",
+      "Weekend peak check-in patterns. Front desk staffing levels increased to prevent bottlenecks."
+    ],
+    "_id": "6ukplqjqu",
+    "id": "6ukplqjqu",
+    "createdAt": "2026-07-11T08:43:14.178Z",
+    "updatedAt": "2026-07-11T09:21:55.069Z"
   }
 ]

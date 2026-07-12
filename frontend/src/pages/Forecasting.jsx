@@ -48,13 +48,16 @@ const Forecasting = () => {
   const [loading, setLoading] = useState(true);
   const [expandedDate, setExpandedDate] = useState(null);
   const [optimizingDate, setOptimizingDate] = useState(null);
+  const [isTraining, setIsTraining] = useState(false);
 
   // ── ML Model & Input Factor States ────────────────────────────────────
   const ML_MODELS = [
-    { id: 'linear',  label: 'Linear Regression', color: 'text-luxury-gold',  badge: 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400',  desc: 'Fast, interpretable. Uses historical trend + seasonality.' },
-    { id: 'rf',      label: 'Random Forest',      color: 'text-emerald-500', badge: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400', desc: 'Ensemble of decision trees. Captures non-linear patterns.' },
-    { id: 'xgb',     label: 'XGBoost',            color: 'text-indigo-400',  badge: 'bg-indigo-500/10 border-indigo-500/20 text-indigo-600 dark:text-indigo-400',  desc: 'Gradient boosting. Best for tabular structured data.' },
-    { id: 'lstm',    label: 'LSTM Neural Net',     color: 'text-rose-400',   badge: 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400',         desc: 'Deep learning sequence model. Ideal for long-range patterns.' },
+    { id: 'linear',  label: 'Simple Linear Regression', color: 'text-luxury-gold',  badge: 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400',  desc: 'Uses historical linear trend + weekly/monthly seasonality.' },
+    { id: 'mlr',     label: 'Multiple Linear Regression', color: 'text-emerald-500', badge: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400', desc: 'Fits OLS linear model with time trend, weekday and month dummies simultaneously.' },
+    { id: 'holtwinters', label: 'Holt-Winters Algorithm', color: 'text-indigo-400',  badge: 'bg-indigo-500/10 border-indigo-500/20 text-indigo-600 dark:text-indigo-400',  desc: 'Triple exponential smoothing capturing level, trend, and seasonality dynamically.' },
+    { id: 'rf',      label: 'Random Forest (Sim)',      color: 'text-slate-400', badge: 'bg-slate-500/10 border-slate-500/20 text-slate-550 dark:text-slate-400', desc: 'Ensemble of decision trees. Captures non-linear patterns.' },
+    { id: 'xgb',     label: 'XGBoost (Sim)',            color: 'text-slate-400',  badge: 'bg-slate-500/10 border-slate-500/20 text-slate-550 dark:text-slate-400',  desc: 'Gradient boosting. Best for tabular structured data.' },
+    { id: 'lstm',    label: 'LSTM Neural Net (Sim)',     color: 'text-slate-400',   badge: 'bg-slate-500/10 border-slate-500/20 text-slate-550 dark:text-slate-400',         desc: 'Deep learning sequence model. Ideal for long-range patterns.' },
   ];
   const SEASONS = [
     { id: 'summer',  label: 'Summer',  icon: Sun,       factor: 1.15 },
@@ -63,7 +66,7 @@ const Forecasting = () => {
     { id: 'holiday', label: 'Holidays', icon: Flame,    factor: 1.25 },
   ];
 
-  const selectedModel = 'lstm';
+  const [selectedModel, setSelectedModel] = useState('mlr');
   const [selectedSeason, setSelectedSeason] = useState('summer');
   const [festivalActive, setFestivalActive] = useState(false);
   const [cancellationRate, setCancellationRate] = useState(10);
@@ -97,7 +100,7 @@ const Forecasting = () => {
   }, [startDate]);
 
   // Effective multiplier for display (does NOT mutate backend forecasts)
-  const modelMultipliers = { linear: 1.00, rf: 1.03, xgb: 1.05, lstm: 1.08 };
+  const modelMultipliers = { linear: 1.00, mlr: 1.00, holtwinters: 1.00, rf: 1.03, xgb: 1.05, lstm: 1.08 };
   const seasonFactor = SEASONS.find(s => s.id === selectedSeason)?.factor || 1;
   const festivalFactor = festivalActive ? 1.12 : 1;
   const cancellationFactor = 1 - (cancellationRate / 100);
@@ -110,8 +113,11 @@ const Forecasting = () => {
 
   const loadForecast = useCallback(async () => {
     try {
-      setLoading(true);
-      const data = await api.getForecast(startDate, forecastDays);
+      if (forecasts.length === 0) {
+        setLoading(true);
+      }
+      setIsTraining(true);
+      const data = await api.getForecast(startDate, forecastDays, selectedModel);
       setForecasts(data);
       if (data.length > 0) {
         setExpandedDate(prev => prev || data[0].date); // Expand first date by default
@@ -120,8 +126,9 @@ const Forecasting = () => {
       console.error('Error loading forecasts:', err);
     } finally {
       setLoading(false);
+      setIsTraining(false);
     }
-  }, [startDate, forecastDays]);
+  }, [startDate, forecastDays, selectedModel, forecasts.length]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -186,14 +193,14 @@ const Forecasting = () => {
     }),
     datasets: [
       {
-        label: `${ML_MODELS.find(m => m.id === selectedModel)?.label} — Predicted Occupancy %`,
+        label: `${ML_MODELS.find(m => m.id === selectedModel)?.label || 'ML Model'} — Predicted Occupancy %`,
         data: adjustedForecasts.map(f => f.predictedOccupancy),
-        borderColor: selectedModel === 'linear' ? '#d4af37' : selectedModel === 'rf' ? '#10b981' : selectedModel === 'xgb' ? '#818cf8' : '#f43f5e',
-        backgroundColor: selectedModel === 'linear' ? 'rgba(212,175,55,0.05)' : selectedModel === 'rf' ? 'rgba(16,185,129,0.05)' : selectedModel === 'xgb' ? 'rgba(129,140,248,0.05)' : 'rgba(244,63,94,0.05)',
+        borderColor: selectedModel === 'linear' ? '#d4af37' : selectedModel === 'mlr' ? '#10b981' : selectedModel === 'holtwinters' ? '#818cf8' : '#f43f5e',
+        backgroundColor: selectedModel === 'linear' ? 'rgba(212,175,55,0.05)' : selectedModel === 'mlr' ? 'rgba(16,185,129,0.05)' : selectedModel === 'holtwinters' ? 'rgba(129,140,248,0.05)' : 'rgba(244,63,94,0.05)',
         borderWidth: 2,
         tension: 0.3,
         fill: true,
-        pointBackgroundColor: selectedModel === 'linear' ? '#d4af37' : selectedModel === 'rf' ? '#10b981' : selectedModel === 'xgb' ? '#818cf8' : '#f43f5e'
+        pointBackgroundColor: selectedModel === 'linear' ? '#d4af37' : selectedModel === 'mlr' ? '#10b981' : selectedModel === 'holtwinters' ? '#818cf8' : '#f43f5e'
       }
     ]
   };
@@ -271,10 +278,23 @@ const Forecasting = () => {
       
       {/* 1. Filters & Search controls */}
       <div className="glass-panel p-6 rounded-2xl shadow-glass flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center space-x-2">
-          <Brain className="h-6 w-6 text-luxury-gold" />
+        <div className="flex items-center space-x-3">
+          <div className="p-2 bg-luxury-gold/10 border border-luxury-gold/20 rounded-xl">
+            <Brain className="h-6 w-6 text-luxury-gold" />
+          </div>
           <div>
-            <h3 className="text-sm font-bold uppercase tracking-wider dark:text-white">Forecasting Parameters</h3>
+            <h3 className="text-sm font-bold uppercase tracking-wider dark:text-white flex items-center gap-2">
+              Forecasting Parameters
+              {isTraining ? (
+                <span className="inline-flex items-center text-[9px] font-bold font-mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
+                  ● Training Model
+                </span>
+              ) : (
+                <span className="inline-flex items-center text-[9px] font-bold font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  ● Live & Synced
+                </span>
+              )}
+            </h3>
             <p className="text-[10px] text-slate-400">Configure range parameters for the ML regression models</p>
           </div>
         </div>
@@ -322,12 +342,17 @@ const Forecasting = () => {
             <h3 className="text-sm font-bold uppercase tracking-wider dark:text-white">ML Engine Configuration</h3>
             <p className="text-[10px] text-slate-400">Forecasting engine </p>
           </div>
-          <div className="ml-auto">
-            <span className={`text-[10px] font-bold px-3 py-1 rounded-full border ${
-              ML_MODELS.find(m => m.id === selectedModel)?.badge
-            }`}>
-              {ML_MODELS.find(m => m.id === selectedModel)?.label} Active
-            </span>
+          <div className="ml-auto flex items-center space-x-2">
+            <span className="text-[10px] text-slate-400 font-semibold">Select Model:</span>
+            <select
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value)}
+              className="bg-white dark:bg-luxury-dark border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-700 dark:text-white focus:outline-none cursor-pointer font-semibold shadow-sm"
+            >
+              {ML_MODELS.map(m => (
+                <option key={m.id} value={m.id}>{m.label}</option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -565,7 +590,9 @@ const Forecasting = () => {
                           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">{dept}</span>
                           <div className="flex items-baseline space-x-1 mt-1">
                             <span className="text-xl font-bold dark:text-white">{act}</span>
-                            <span className="text-xs text-slate-400 font-medium">/ {rec} recommended</span>
+                            <span className="text-xs text-slate-400 font-medium"> present / </span>
+                            <span className="text-xl font-bold dark:text-white">{rec}</span>
+                            <span className="text-xs text-slate-400 font-medium"> required</span>
                           </div>
                           {/* Gap bar */}
                           <div className="h-1 w-full bg-slate-100 dark:bg-slate-800 rounded-full mt-2 overflow-hidden">
