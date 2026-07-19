@@ -518,6 +518,46 @@ const getOrTrainModel = async (trainingHistory, modelType) => {
  * Service function to get forecasts for a future range of days
  */
 const getForecastRange = async (startDateStr, numDays = 7, totalRooms = 100, modelType = 'mlr') => {
+  try {
+    // 1. Try to fetch predictions pre-computed by the Python background worker
+    let dbPredictions = await db.collection('livePredictions').find();
+    if (dbPredictions && dbPredictions.length > 0) {
+      // Filter predictions starting from startDateStr
+      const filtered = dbPredictions
+        .filter(f => f.date >= startDateStr)
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .slice(0, numDays);
+
+      if (filtered.length > 0) {
+        const forecasts = [];
+        for (const f of filtered) {
+          // Check if we already have a saved manual adjustment/recommendation in DB
+          let savedRec = await db.collection('recommendations').findOne({ date: f.date });
+          
+          if (savedRec) {
+            forecasts.push({
+              ...f,
+              recommendedStaff: savedRec.recommendedStaff,
+              actualStaffScheduled: savedRec.actualStaffScheduled || f.recommendedStaff,
+              optimized: savedRec.optimized || false,
+              insights: savedRec.insights.length ? savedRec.insights : f.insights
+            });
+          } else {
+            forecasts.push({
+              ...f,
+              actualStaffScheduled: f.recommendedStaff,
+              optimized: false
+            });
+          }
+        }
+        return forecasts;
+      }
+    }
+  } catch (err) {
+    console.error('⚠️ Failed to fetch from livePredictions collection, falling back to JS:', err.message);
+  }
+
+  // 2. Fallback: Dynamic JS calculations if the Python worker database is empty
   const history = await db.collection('occupancyHistory').find();
   // Filter history to only include dates strictly before the forecast start date
   const trainingHistory = history.filter(h => h.date < startDateStr);

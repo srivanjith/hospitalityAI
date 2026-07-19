@@ -25,3 +25,19 @@ yarn-error.log*
 .idea/
 .DS_Store
 Thumbs.db
+
+# Python caching and virtualenvs
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+venv-ml/
+
+# Local developer tools and interpreter configs
+pyrefly.toml
+**/pyrefly.toml
+
+

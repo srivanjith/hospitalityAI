@@ -67,87 +67,94 @@ const Dashboard = ({ setCurrentPage }) => {
   const [suggestionError, setSuggestionError] = useState('');
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const loadDashboardData = async () => {
+  const loadDashboardData = async (isSilent = false) => {
+    try {
+      if (!isSilent) setLoading(true);
+      const todayStr = new Date().toISOString().split('T')[0];
+
+      // 1. Fetch Occupancy Analytics (last 30 days)
+      const analytics = await api.getOccupancyAnalytics(30);
+      
+      // 2. Fetch 7-day forecast
+      const forecast = await api.getForecast(todayStr, 7);
+      setForecast7Days(forecast);
+      
+      // 3. Fetch active alerts/notifications
+      const notifications = await api.getNotifications();
+      // filter for recent unread alerts matching today's alerts or high priority
+      setAlerts(notifications.filter(n => !n.read && (n.type === 'staffing' || n.type === 'high-demand')).slice(0, 4));
+
+      // 4. Calculate dynamic stats
+      const todayForecast = forecast[0] || {
+        roomsOccupied: 0,
+        predictedOccupancy: 0,
+        recommendedStaff: {},
+        actualStaffScheduled: {}
+      };
+
+      const totalRooms = 500;
+      const occupied = todayForecast.roomsOccupied || 0;
+      const available = totalRooms - occupied;
+      const rate = todayForecast.predictedOccupancy || 0;
+
+      // Calculate staff utilization: ratio of scheduled to recommended staff
+      const recSum = Object.values(todayForecast.recommendedStaff || {}).reduce((a, b) => a + b, 0);
+      const actSum = Object.values(todayForecast.actualStaffScheduled || {}).reduce((a, b) => a + b, 0);
+      const utilRate = recSum > 0 ? Math.min(100, Math.round((actSum / recSum) * 100)) : 80;
+
+      setStats({
+        totalRooms,
+        occupiedRooms: occupied,
+        availableRooms: available,
+        occupancyRate: rate,
+        monthlyRevenue: analytics.summary.totalRevenue,
+        staffUtilization: utilRate
+      });
+
+      // 5. Fetch guest staff reports
       try {
-        setLoading(true);
-        const todayStr = new Date().toISOString().split('T')[0];
-
-        // 1. Fetch Occupancy Analytics (last 30 days)
-        const analytics = await api.getOccupancyAnalytics(30);
-        
-        // 2. Fetch 7-day forecast
-        const forecast = await api.getForecast(todayStr, 7);
-        setForecast7Days(forecast);
-        
-        // 3. Fetch active alerts/notifications
-        const notifications = await api.getNotifications();
-        // filter for recent unread alerts matching today's alerts or high priority
-        setAlerts(notifications.filter(n => !n.read && (n.type === 'staffing' || n.type === 'high-demand')).slice(0, 4));
-
-        // 4. Calculate dynamic stats
-        const todayForecast = forecast[0] || {
-          roomsOccupied: 0,
-          predictedOccupancy: 0,
-          recommendedStaff: {},
-          actualStaffScheduled: {}
-        };
-
-        const totalRooms = 500;
-        const occupied = todayForecast.roomsOccupied || 0;
-        const available = totalRooms - occupied;
-        const rate = todayForecast.predictedOccupancy || 0;
-
-        // Calculate staff utilization: ratio of scheduled to recommended staff
-        const recSum = Object.values(todayForecast.recommendedStaff || {}).reduce((a, b) => a + b, 0);
-        const actSum = Object.values(todayForecast.actualStaffScheduled || {}).reduce((a, b) => a + b, 0);
-        const utilRate = recSum > 0 ? Math.min(100, Math.round((actSum / recSum) * 100)) : 80;
-
-        setStats({
-          totalRooms,
-          occupiedRooms: occupied,
-          availableRooms: available,
-          occupancyRate: rate,
-          monthlyRevenue: analytics.summary.totalRevenue,
-          staffUtilization: utilRate
-        });
-
-        // 5. Fetch guest staff reports
-        try {
-          const reports = await api.getStaffReports();
-          setStaffReports(reports || []);
-        } catch {
-          // Non-critical
-        }
-
-        // Fetch guest feedbacks
-        try {
-          const feedbacksData = await api.getFeedbacks();
-          setFeedbacks(feedbacksData || []);
-        } catch {
-          // Non-critical
-        }
-
-        // 6. Fetch occupancy suggestion (independent — has its own loading state)
-        setSuggestionLoading(true);
-        setSuggestionError('');
-        api.getOccupancySuggestion()
-          .then(data => {
-            setOccupancySuggestion(data);
-            setSuggestionLoading(false);
-          })
-          .catch(err => {
-            setSuggestionError(err.message || 'Could not load suggestion data');
-            setSuggestionLoading(false);
-          });
-      } catch (err) {
-        console.error('Error loading dashboard data:', err);
-      } finally {
-        setLoading(false);
+        const reports = await api.getStaffReports();
+        setStaffReports(reports || []);
+      } catch {
+        // Non-critical
       }
-    };
 
-    loadDashboardData();
+      // Fetch guest feedbacks
+      try {
+        const feedbacksData = await api.getFeedbacks();
+        setFeedbacks(feedbacksData || []);
+      } catch {
+        // Non-critical
+      }
+
+      // 6. Fetch occupancy suggestion (independent — has its own loading state)
+      if (!isSilent) setSuggestionLoading(true);
+      setSuggestionError('');
+      try {
+        const data = await api.getOccupancySuggestion();
+        setOccupancySuggestion(data);
+      } catch (err) {
+        if (!isSilent) setSuggestionError(err.message || 'Could not load suggestion data');
+      } finally {
+        if (!isSilent) setSuggestionLoading(false);
+      }
+    } catch (err) {
+      console.error('Error loading dashboard data:', err);
+    } finally {
+      if (!isSilent) setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Initial load with spinners
+    loadDashboardData(false);
+
+    // Silent background updates every 10 seconds
+    const interval = setInterval(() => {
+      loadDashboardData(true);
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, []);
 
   // Forecast Chart configuration
