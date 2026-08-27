@@ -67,6 +67,7 @@ const AIChatWidget = ({ currentPage }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [isMinimized, setIsMinimized] = useState(false);
+  const [modelName, setModelName] = useState('openai/gpt-oss-120b');
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -105,6 +106,10 @@ const AIChatWidget = ({ currentPage }) => {
         .map(m => ({ role: m.role, content: m.content }));
 
       const data = await api.aiChat(messageText, currentPage, conversationHistory);
+
+      if (data.model) {
+        setModelName(data.model);
+      }
 
       setMessages(prev => [
         ...prev,
@@ -274,7 +279,7 @@ const AIChatWidget = ({ currentPage }) => {
                   </button>
                 </div>
                 <p className="text-[10px] text-slate-400 mt-1.5 text-center">
-                  Powered by Groq • llama-3.3-70b-versatile
+                  Powered by Groq • {modelName}
                 </p>
               </div>
             </>

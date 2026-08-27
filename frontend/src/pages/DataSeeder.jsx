@@ -62,7 +62,7 @@ const DataSeeder = () => {
             AI Synthetic Data Seeder
           </h2>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-            Uses Groq LLaMA 3.3-70B to generate realistic hotel booking &amp; occupancy history
+            Uses Groq AI models to generate realistic hotel booking &amp; occupancy history
             and bulk-insert it into your MongoDB database.
           </p>
         </div>

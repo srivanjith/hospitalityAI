@@ -196,10 +196,11 @@ INSTRUCTIONS:
       { role: 'user', content: message }
     ];
 
-    const reply = await groqService.chat(messages, 'llama-3.3-70b-versatile', 1024);
+    const reply = await groqService.chat(messages, undefined, 1024);
 
     return res.json({
       reply,
+      model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
       snapshot: {
         today: snapshot.today,
         occupancyPct: snapshot.currentOccupancyPct,

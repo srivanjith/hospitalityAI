@@ -13,13 +13,17 @@ const getClient = () => {
   return groqClient;
 };
 
+const getModel = () => {
+  return process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
+};
+
 /**
  * @param {Array<{role: string, content: string}>} messages
  * @param {string} model
  * @param {number} maxTokens
  * @returns {Promise<string>} 
  */
-const chat = async (messages, model = 'llama-3.3-70b-versatile', maxTokens = 1024) => {
+const chat = async (messages, model = getModel(), maxTokens = 1024) => {
   const client = getClient();
   const completion = await client.chat.completions.create({
     model,
@@ -38,7 +42,7 @@ const chat = async (messages, model = 'llama-3.3-70b-versatile', maxTokens = 102
 const generateJSON = async (prompt, maxTokens = 4096) => {
   const client = getClient();
   const completion = await client.chat.completions.create({
-    model: 'llama-3.3-70b-versatile',
+    model: getModel(),
     messages: [
       {
         role: 'system',
